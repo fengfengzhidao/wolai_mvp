@@ -78,6 +78,7 @@ function createEditor() {
           ]),
         ),
         basicSetup,
+        EditorView.lineWrapping,
         codeBlockTheme,
         languageCompartment.of(getCodeLanguageExtension(props.block.language)),
         editableCompartment.of(EditorView.editable.of(!props.disabled)),
@@ -207,6 +208,7 @@ const codeBlockTheme = EditorView.theme(
     ".cm-scroller": {
       fontFamily:
         '"Cascadia Code", "Fira Code", Consolas, "Liberation Mono", monospace',
+      overflowX: "hidden",
     },
     ".cm-gutters": {
       display: "none",
