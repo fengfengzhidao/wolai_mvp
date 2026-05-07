@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import BlockActionMenu from "./BlockActionMenu.vue";
 
 const props = defineProps({
@@ -174,6 +174,20 @@ async function focusBlock(blockId) {
   input?.focus();
 }
 
+function resizeBlockInput(input) {
+  if (!(input instanceof HTMLTextAreaElement) || input.classList.contains("code-block")) {
+    return;
+  }
+
+  input.style.height = "auto";
+  input.style.height = `${input.scrollHeight}px`;
+}
+
+async function resizeAllBlockInputs() {
+  await nextTick();
+  blockInputs.value.forEach((input) => resizeBlockInput(input));
+}
+
 function handleBackspace(event, blockId) {
   if (event.target.value !== "" || event.target.selectionStart !== 0) {
     return;
@@ -201,6 +215,7 @@ function handlePaste(event, blockId) {
 function handleInput(event, blockId) {
   const value = event.target.value;
   const block = props.blocks.find((item) => item.id === blockId);
+  resizeBlockInput(event.target);
   emit("update-block", blockId, value);
 
   if (block?.type === "code") {
@@ -572,6 +587,7 @@ defineExpose({
 });
 
 onMounted(() => {
+  resizeAllBlockInputs();
   document.addEventListener("pointerdown", handleDocumentPointerDown);
   document.addEventListener("pointermove", handleDocumentPointerMove);
   document.addEventListener("pointerup", handleDocumentPointerUp);
@@ -584,6 +600,13 @@ onBeforeUnmount(() => {
   document.removeEventListener("pointerup", handleDocumentPointerUp);
   document.removeEventListener("keydown", handleDocumentKeydown);
 });
+
+watch(
+  () => props.blocks.map((block) => `${block.id}:${block.text}`).join("|"),
+  () => {
+    resizeAllBlockInputs();
+  },
+);
 </script>
 
 <template>
@@ -619,16 +642,16 @@ onBeforeUnmount(() => {
           aria-label="待办状态"
           @change="$emit('toggle-block', block.id, $event.target.checked)"
         />
-        <input
+        <textarea
           v-if="block.type !== 'code'"
           ref="blockInputs"
           :data-block-id="block.id"
           class="text-block"
           :class="`is-${block.type}`"
-          type="text"
           :value="block.text"
           :placeholder="getBlockPlaceholder(block)"
           :disabled="disabled"
+          rows="1"
           @focus="focusedBlockId = block.id"
           @blur="focusedBlockId = null"
           @input="handleInput($event, block.id)"
