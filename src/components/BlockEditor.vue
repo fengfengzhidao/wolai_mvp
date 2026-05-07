@@ -21,6 +21,15 @@ async function focusBlock(blockId) {
   input?.focus();
 }
 
+function handleBackspace(event, blockId) {
+  if (event.target.value !== "" || event.target.selectionStart !== 0) {
+    return;
+  }
+
+  event.preventDefault();
+  emit("delete-empty-block", blockId);
+}
+
 defineExpose({
   focusBlock,
 });
@@ -40,11 +49,7 @@ defineExpose({
       :disabled="disabled"
       @input="$emit('update-block', block.id, $event.target.value)"
       @keydown.enter.prevent="$emit('insert-block-after', block.id)"
-      @keydown.backspace="
-        block.text === '' && $event.target.selectionStart === 0
-          ? ($event.preventDefault(), $emit('delete-empty-block', block.id))
-          : null
-      "
+      @keydown.backspace="handleBackspace($event, block.id)"
     />
   </div>
 </template>
