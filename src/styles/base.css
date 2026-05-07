@@ -94,6 +94,19 @@ textarea {
   gap: 4px;
 }
 
+.page-tree-node {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.page-tree-children {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-left: 16px;
+}
+
 .empty-list {
   display: none;
   margin: 14px 8px;
@@ -168,6 +181,38 @@ textarea {
   background: transparent;
   text-align: left;
   cursor: pointer;
+}
+
+.page-item-main {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.page-expand-button,
+.page-expand-spacer {
+  width: 18px;
+  height: 20px;
+}
+
+.page-expand-button {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  color: #9f9f9f;
+  background: transparent;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.page-expand-button:hover {
+  color: #f0f0f0;
+  background: #343434;
 }
 
 .context-menu-item:hover {

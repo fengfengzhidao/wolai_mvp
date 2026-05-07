@@ -46,7 +46,8 @@ npm run build
 ## 当前代码结构
 
 - `src/App.vue`：组合左侧页面列表和右侧编辑器
-- `src/components/Sidebar.vue`：页面列表、新建页面、右键删除页面
+- `src/components/Sidebar.vue`：页面列表、新建页面、右键菜单
+- `src/components/PageTreeNode.vue`：左侧页面树节点递归渲染
 - `src/components/NoteEditor.vue`：页面标题、块编辑器和页面更新逻辑
 - `src/components/BlockEditor.vue`：块级输入、键盘交互、斜杠菜单
 - `src/composables/useNotes.js`：页面数据、当前页面、创建、选择、删除、保存
@@ -59,12 +60,14 @@ npm run build
 
 - 页面列表
 - 新建页面
+- 右键页面新建子页面
+- 左侧页面列表支持树结构展开/收起
 - 选中页面高亮
 - 页面标题编辑
 - 自动保存
 - 刷新后恢复数据
 - 右键页面打开菜单
-- 删除页面
+- 删除页面，删除父页面时会级联删除子页面
 
 块编辑阶段 1：
 
@@ -128,6 +131,8 @@ npm run build
   title: string,
   content: string,
   blocks: Block[],
+  parentId: string | null,
+  order: number,
   createdAt: number,
   updatedAt: number
 }

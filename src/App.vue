@@ -8,6 +8,7 @@ const {
   activePage,
   saveStatus,
   createNewPage,
+  createChildPage,
   selectPage,
   deletePage,
   updateActivePage,
@@ -20,6 +21,7 @@ const {
       :pages="sortedPages"
       :active-page-id="activePage?.id || null"
       @create-page="createNewPage"
+      @create-child-page="createChildPage"
       @select-page="selectPage"
       @delete-page="deletePage"
     />

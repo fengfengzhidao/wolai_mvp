@@ -37,8 +37,18 @@ function createPage(title = "未命名页面", content = "") {
     title,
     content,
     blocks: [createBlock(content)],
+    parentId: null,
+    order: 0,
     createdAt: now,
     updatedAt: now,
+  };
+}
+
+function normalizePageTreeFields(page, index) {
+  return {
+    ...page,
+    parentId: typeof page.parentId === "string" ? page.parentId : null,
+    order: Number.isFinite(page.order) ? page.order : index,
   };
 }
 
@@ -63,7 +73,9 @@ function migratePageBlocks(page) {
 function loadPages() {
   try {
     const storedPages = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    return Array.isArray(storedPages) ? storedPages.map(migratePageBlocks) : [];
+    return Array.isArray(storedPages)
+      ? storedPages.map((page, index) => normalizePageTreeFields(migratePageBlocks(page), index))
+      : [];
   } catch {
     return [];
   }
@@ -108,11 +120,25 @@ export function useNotes() {
     }, 350);
   }
 
-  function createNewPage() {
+  function getFirstOrder(parentId) {
+    const siblingOrders = pages.value
+      .filter((page) => page.parentId === parentId)
+      .map((page) => page.order);
+
+    return siblingOrders.length > 0 ? Math.min(...siblingOrders) : 0;
+  }
+
+  function createNewPage(parentId = null) {
     const newPage = createPage();
+    newPage.parentId = parentId;
+    newPage.order = getFirstOrder(parentId) - 1;
     pages.value = [newPage, ...pages.value];
     activePageId.value = newPage.id;
     persistPages();
+  }
+
+  function createChildPage(parentId) {
+    createNewPage(parentId);
   }
 
   function selectPage(pageId) {
@@ -122,10 +148,23 @@ export function useNotes() {
   }
 
   function deletePage(pageId) {
-    const nextPages = pages.value.filter((page) => page.id !== pageId);
+    const deletedPageIds = new Set([pageId]);
+    let changed = true;
+
+    while (changed) {
+      changed = false;
+      pages.value.forEach((page) => {
+        if (page.parentId && deletedPageIds.has(page.parentId) && !deletedPageIds.has(page.id)) {
+          deletedPageIds.add(page.id);
+          changed = true;
+        }
+      });
+    }
+
+    const nextPages = pages.value.filter((page) => !deletedPageIds.has(page.id));
     pages.value = nextPages;
 
-    if (activePageId.value === pageId) {
+    if (activePageId.value && deletedPageIds.has(activePageId.value)) {
       activePageId.value = nextPages[0]?.id || null;
     }
 
@@ -158,6 +197,7 @@ export function useNotes() {
     activePage,
     saveStatus,
     createNewPage,
+    createChildPage,
     selectPage,
     deletePage,
     updateActivePage,

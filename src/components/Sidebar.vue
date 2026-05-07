@@ -1,8 +1,8 @@
 <script setup>
-import { onBeforeUnmount, ref } from "vue";
-import { formatTime } from "../utils/formatTime";
+import { computed, onBeforeUnmount, ref } from "vue";
+import PageTreeNode from "./PageTreeNode.vue";
 
-defineProps({
+const props = defineProps({
   pages: {
     type: Array,
     required: true,
@@ -13,13 +13,71 @@ defineProps({
   },
 });
 
-const emit = defineEmits(["create-page", "select-page", "delete-page"]);
+const emit = defineEmits(["create-page", "create-child-page", "select-page", "delete-page"]);
 const contextMenu = ref({
   isOpen: false,
   pageId: null,
   x: 0,
   y: 0,
 });
+const expandedPageIds = ref(getParentIds(props.pages));
+
+const pageTree = computed(() => buildPageTree(props.pages));
+
+function buildPageTree(pages) {
+  const pageById = new Map();
+  const childMap = new Map();
+
+  pages.forEach((page) => {
+    pageById.set(page.id, {
+      ...page,
+      children: [],
+    });
+  });
+
+  pageById.forEach((page) => {
+    const parentId = page.parentId && pageById.has(page.parentId) ? page.parentId : null;
+    const siblings = childMap.get(parentId) || [];
+    siblings.push(page);
+    childMap.set(parentId, siblings);
+  });
+
+  childMap.forEach((children) => {
+    children.sort((a, b) => {
+      if (a.order !== b.order) {
+        return a.order - b.order;
+      }
+
+      return b.updatedAt - a.updatedAt;
+    });
+  });
+
+  pageById.forEach((page) => {
+    page.children = childMap.get(page.id) || [];
+  });
+
+  return childMap.get(null) || [];
+}
+
+function getParentIds(pages) {
+  return new Set(
+    pages
+      .filter((page) => pages.some((child) => child.parentId === page.id))
+      .map((page) => page.id),
+  );
+}
+
+function toggleExpanded(pageId) {
+  const nextExpandedPageIds = new Set(expandedPageIds.value);
+
+  if (nextExpandedPageIds.has(pageId)) {
+    nextExpandedPageIds.delete(pageId);
+  } else {
+    nextExpandedPageIds.add(pageId);
+  }
+
+  expandedPageIds.value = nextExpandedPageIds;
+}
 
 function openContextMenu(event, pageId) {
   contextMenu.value = {
@@ -49,6 +107,18 @@ function requestDeletePage() {
   }
 }
 
+function requestCreateChildPage() {
+  const pageId = contextMenu.value.pageId;
+  closeContextMenu();
+
+  if (!pageId) {
+    return;
+  }
+
+  emit("create-child-page", pageId);
+  expandedPageIds.value = new Set([...expandedPageIds.value, pageId]);
+}
+
 onBeforeUnmount(() => {
   window.removeEventListener("click", closeContextMenu);
 });
@@ -69,18 +139,16 @@ onBeforeUnmount(() => {
     <section class="page-list-panel" aria-label="页面列表">
       <p class="section-title">页面</p>
       <div class="page-list">
-        <button
-          v-for="page in pages"
+        <PageTreeNode
+          v-for="page in pageTree"
           :key="page.id"
-          class="page-list-item"
-          :class="{ 'is-active': page.id === activePageId }"
-          type="button"
-          @click="$emit('select-page', page.id)"
-          @contextmenu.prevent="openContextMenu($event, page.id)"
-        >
-          <span class="page-title">{{ page.title.trim() || "未命名页面" }}</span>
-          <span class="page-time">{{ formatTime(page.updatedAt) }}</span>
-        </button>
+          :page="page"
+          :active-page-id="activePageId"
+          :expanded-page-ids="expandedPageIds"
+          @select-page="$emit('select-page', $event)"
+          @open-menu="openContextMenu"
+          @toggle-expanded="toggleExpanded"
+        />
       </div>
       <p v-if="pages.length === 0" class="empty-list is-visible">还没有页面</p>
     </section>
@@ -91,6 +159,9 @@ onBeforeUnmount(() => {
       :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
       @click.stop
     >
+      <button class="context-menu-item" type="button" @click="requestCreateChildPage">
+        新建子页面
+      </button>
       <button class="context-menu-item is-danger" type="button" @click="requestDeletePage">
         删除页面
       </button>
