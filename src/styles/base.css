@@ -167,8 +167,7 @@ textarea {
   white-space: nowrap;
 }
 
-.title-input,
-.content-input {
+.title-input {
   width: 100%;
   border: 0;
   outline: 0;
@@ -188,13 +187,95 @@ textarea {
   color: #676767;
 }
 
-.content-input {
-  display: block;
-  min-height: 520px;
+.markdown-editor-wrap {
   margin-top: 28px;
-  resize: none;
-  font-size: 17px;
-  line-height: 1.9;
+}
+
+.toastui-editor-defaultUI {
+  overflow: hidden;
+  border-color: #343434;
+  border-radius: 8px;
+  background: #181818;
+}
+
+.toastui-editor-defaultUI-toolbar {
+  border-bottom-color: #343434;
+  background: #242424;
+}
+
+.toastui-editor-toolbar-icons {
+  border-color: #3d3d3d;
+  background-color: #303030;
+}
+
+.toastui-editor-md-container,
+.toastui-editor-ww-container,
+.toastui-editor-md-preview {
+  background: #181818;
+}
+
+.toastui-editor-main .toastui-editor-md-tab-container {
+  background: #242424;
+  border-bottom-color: #343434;
+}
+
+.toastui-editor-main .toastui-editor-md-tab-style > .active {
+  color: #f3f3f3;
+  border-color: #343434;
+  background: #181818;
+}
+
+.toastui-editor-main .toastui-editor-md-tab-style > .tab-item {
+  color: #a8a8a8;
+}
+
+.toastui-editor-md-splitter {
+  background-color: #343434;
+}
+
+.toastui-editor-md-preview .toastui-editor-contents,
+.toastui-editor-contents {
+  color: #eeeeee;
+  font-size: 16px;
+}
+
+.toastui-editor-contents h1,
+.toastui-editor-contents h2,
+.toastui-editor-contents h3,
+.toastui-editor-contents h4,
+.toastui-editor-contents h5,
+.toastui-editor-contents h6 {
+  color: #ffffff;
+}
+
+.toastui-editor-contents blockquote {
+  color: #cfcfcf;
+  border-left-color: #8a4f55;
+  background: #222222;
+}
+
+.toastui-editor-contents code,
+.toastui-editor-contents pre {
+  color: #eeeeee;
+  background: #242424;
+}
+
+.toastui-editor-contents table th,
+.toastui-editor-contents table td {
+  border-color: #444444;
+}
+
+.toastui-editor-md-container .toastui-editor-md-preview {
+  border-left-color: #343434;
+}
+
+.toastui-editor-md-container .toastui-editor-md-preview-highlight::after {
+  background: rgba(138, 79, 85, 0.18);
+}
+
+.toastui-editor-defaultUI .ProseMirror,
+.toastui-editor-md-container .toastui-editor-md-preview {
+  color: #eeeeee;
 }
 
 @media (max-width: 760px) {
