@@ -12,7 +12,7 @@ defineProps({
   },
 });
 
-const emit = defineEmits(["update-block", "insert-block-after"]);
+const emit = defineEmits(["update-block", "insert-block-after", "delete-empty-block"]);
 const blockInputs = ref([]);
 
 async function focusBlock(blockId) {
@@ -40,6 +40,11 @@ defineExpose({
       :disabled="disabled"
       @input="$emit('update-block', block.id, $event.target.value)"
       @keydown.enter.prevent="$emit('insert-block-after', block.id)"
+      @keydown.backspace="
+        block.text === '' && $event.target.selectionStart === 0
+          ? ($event.preventDefault(), $emit('delete-empty-block', block.id))
+          : null
+      "
     />
   </div>
 </template>

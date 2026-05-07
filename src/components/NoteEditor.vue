@@ -78,6 +78,26 @@ async function insertBlockAfter(blockId) {
   await nextTick();
   blockEditor.value?.focusBlock(nextBlock.id);
 }
+
+async function deleteEmptyBlock(blockId) {
+  const currentBlocks = props.page?.blocks || [];
+
+  if (currentBlocks.length <= 1) {
+    return;
+  }
+
+  const blockIndex = currentBlocks.findIndex((block) => block.id === blockId);
+  const previousBlock = currentBlocks[Math.max(0, blockIndex - 1)];
+  const blocks = currentBlocks.filter((block) => block.id !== blockId);
+
+  emit("update-page", {
+    blocks,
+    content: blocks.map((block) => block.text).join("\n\n"),
+  });
+
+  await nextTick();
+  blockEditor.value?.focusBlock(previousBlock?.id || blocks[0]?.id);
+}
 </script>
 
 <template>
@@ -102,6 +122,7 @@ async function insertBlockAfter(blockId) {
         :disabled="!page"
         @update-block="updateBlock"
         @insert-block-after="insertBlockAfter"
+        @delete-empty-block="deleteEmptyBlock"
       />
     </div>
   </section>
