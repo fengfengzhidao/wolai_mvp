@@ -20,12 +20,16 @@
         <section class="page-list-panel" aria-label="页面列表">
           <p class="section-title">页面</p>
           <div class="page-list" id="pageList"></div>
+          <p class="empty-list" id="emptyList">还没有页面</p>
         </section>
       </aside>
 
       <section class="editor-pane" aria-label="页面编辑区">
         <div class="editor-inner">
-          <div class="editor-status" id="saveStatus">已保存</div>
+          <div class="editor-meta">
+            <span id="updatedAtLabel">尚未保存</span>
+            <span class="editor-status" id="saveStatus">已保存</span>
+          </div>
           <input
             class="title-input"
             id="titleInput"

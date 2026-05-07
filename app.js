@@ -3,6 +3,8 @@ const newPageButton = document.querySelector("#newPageButton");
 const titleInput = document.querySelector("#titleInput");
 const contentInput = document.querySelector("#contentInput");
 const saveStatus = document.querySelector("#saveStatus");
+const updatedAtLabel = document.querySelector("#updatedAtLabel");
+const emptyList = document.querySelector("#emptyList");
 
 const STORAGE_KEY = "wolai_mvp_pages";
 const ACTIVE_PAGE_KEY = "wolai_mvp_active_page";
@@ -53,6 +55,7 @@ function queueSave() {
   saveTimer = window.setTimeout(() => {
     persistPages();
     saveStatus.textContent = "已保存";
+    updatedAtLabel.textContent = `更新于 ${formatTime(Date.now())}`;
     renderPageList();
   }, 350);
 }
@@ -63,6 +66,8 @@ function getActivePage() {
 
 function renderPageList() {
   const sortedPages = [...pages].sort((a, b) => b.updatedAt - a.updatedAt);
+
+  emptyList.classList.toggle("is-visible", sortedPages.length === 0);
 
   pageListEl.innerHTML = sortedPages
     .map((page) => {
@@ -87,6 +92,7 @@ function renderEditor() {
     contentInput.value = "";
     titleInput.disabled = true;
     contentInput.disabled = true;
+    updatedAtLabel.textContent = "尚未保存";
     return;
   }
 
@@ -95,6 +101,7 @@ function renderEditor() {
   contentInput.disabled = false;
   titleInput.value = activePage.title;
   contentInput.value = activePage.content;
+  updatedAtLabel.textContent = `更新于 ${formatTime(activePage.updatedAt)}`;
   saveStatus.textContent = "已保存";
   persistPages();
 }
