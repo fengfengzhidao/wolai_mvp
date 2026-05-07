@@ -122,6 +122,24 @@ const blockTypeMenuItems = computed(() =>
   })),
 );
 
+const selectionBoxStyle = computed(() => {
+  if (!isPointerSelecting.value || !selectionStartPoint.value || !pointerCurrent.value) {
+    return null;
+  }
+
+  const left = Math.min(selectionStartPoint.value.x, pointerCurrent.value.x);
+  const top = Math.min(selectionStartPoint.value.y, pointerCurrent.value.y);
+  const width = Math.abs(selectionStartPoint.value.x - pointerCurrent.value.x);
+  const height = Math.abs(selectionStartPoint.value.y - pointerCurrent.value.y);
+
+  return {
+    left: `${left}px`,
+    top: `${top}px`,
+    width: `${width}px`,
+    height: `${height}px`,
+  };
+});
+
 function getBlockPlaceholder(block) {
   const placeholders = {
     paragraph: "输入内容，回车新建块",
@@ -417,7 +435,7 @@ function handleDocumentPointerMove(event) {
     y: event.clientY,
   };
 
-  if (deltaX > 4 || deltaY > 4) {
+  if (deltaX > 2 || deltaY > 2) {
     isPointerSelecting.value = true;
   }
 }
@@ -430,8 +448,8 @@ function handleDocumentPointerUp(event) {
   };
   const movedFarEnough =
     startPoint &&
-    (Math.abs(endPoint.x - startPoint.x) > 4 ||
-      Math.abs(endPoint.y - startPoint.y) > 4);
+    (Math.abs(endPoint.x - startPoint.x) > 2 ||
+      Math.abs(endPoint.y - startPoint.y) > 2);
   const shouldSelectBlocks =
     movedFarEnough && startPoint && !didDropBlock.value;
 
@@ -461,10 +479,10 @@ function selectBlocksInPointerRange(startPoint) {
   const blockShells = Array.from(document.querySelectorAll(".block-shell"));
   const endPoint = pointerCurrent.value || startPoint;
   const selectionRect = {
-    left: Math.min(startPoint.x, endPoint.x),
-    right: Math.max(startPoint.x, endPoint.x),
-    top: Math.min(startPoint.y, endPoint.y),
-    bottom: Math.max(startPoint.y, endPoint.y),
+    left: Math.min(startPoint.x, endPoint.x) - 8,
+    right: Math.max(startPoint.x, endPoint.x) + 8,
+    top: Math.min(startPoint.y, endPoint.y) - 8,
+    bottom: Math.max(startPoint.y, endPoint.y) + 8,
   };
 
   selectedBlockIds.value = blockShells
@@ -562,6 +580,16 @@ function handleDocumentPointerDown(event) {
   }
 
   if (
+    event.button === 0 &&
+    selectedBlockIds.value.length > 0 &&
+    !target.closest(".block-shell") &&
+    !target.closest(".block-action-menu") &&
+    !target.closest(".slash-menu")
+  ) {
+    clearBlockSelection();
+  }
+
+  if (
     blockMenu.value.isOpen &&
     !target.closest(".block-action-menu") &&
     !target.closest(".block-shell")
@@ -615,6 +643,12 @@ watch(
     aria-label="块编辑区"
     @pointerdown="handleEditorPointerDown"
   >
+    <div
+      v-if="selectionBoxStyle"
+      class="block-selection-box"
+      :style="selectionBoxStyle"
+    ></div>
+
     <div
       v-for="block in blocks"
       :key="block.id"

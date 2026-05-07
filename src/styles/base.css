@@ -249,7 +249,19 @@ textarea {
 }
 
 .block-shell.is-selected .block-row {
-  background: rgba(138, 79, 85, 0.16);
+  outline: 1px solid rgba(214, 160, 165, 0.72);
+  background: rgba(138, 79, 85, 0.28);
+  box-shadow: inset 3px 0 0 #d6a0a5;
+}
+
+.block-selection-box {
+  position: fixed;
+  z-index: 30;
+  border: 1px solid rgba(214, 160, 165, 0.95);
+  border-radius: 4px;
+  background: rgba(138, 79, 85, 0.2);
+  box-shadow: 0 0 0 1px rgba(138, 79, 85, 0.26);
+  pointer-events: none;
 }
 
 .block-action-menu {
