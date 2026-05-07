@@ -106,7 +106,14 @@ function escapeHtml(value) {
 }
 
 newPageButton.addEventListener("click", () => {
-  saveStatus.textContent = "已准备";
+  const newPage = createPage();
+  pages = [newPage, ...pages];
+  activePageId = newPage.id;
+  persistPages();
+  renderPageList();
+  renderEditor();
+  titleInput.focus();
+  titleInput.select();
 });
 
 pageListEl.addEventListener("click", (event) => {
