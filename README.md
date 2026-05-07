@@ -10,4 +10,17 @@
 - 从页面列表再次打开
 - 继续编辑
 
-当前版本采用静态前端实现，数据保存在浏览器 `localStorage` 中。
+当前版本采用 Vue 3 + Vite 实现，数据保存在浏览器 `localStorage` 中。
+
+## 开发命令
+
+```bash
+npm install
+npm run dev
+```
+
+## 构建
+
+```bash
+npm run build
+```
