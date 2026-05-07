@@ -12,7 +12,12 @@ defineProps({
   },
 });
 
-const emit = defineEmits(["update-block", "insert-block-after", "delete-empty-block"]);
+const emit = defineEmits([
+  "update-block",
+  "toggle-block",
+  "insert-block-after",
+  "delete-empty-block",
+]);
 const blockInputs = ref([]);
 
 async function focusBlock(blockId) {
@@ -52,6 +57,7 @@ defineExpose({
         :checked="block.checked"
         :disabled="disabled"
         aria-label="待办状态"
+        @change="$emit('toggle-block', block.id, $event.target.checked)"
       />
       <input
         ref="blockInputs"

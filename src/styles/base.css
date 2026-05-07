@@ -289,6 +289,11 @@ textarea {
   line-height: 1.4;
 }
 
+.block-row.is-todo:has(.todo-checkbox:checked) .text-block {
+  color: #8f8f8f;
+  text-decoration: line-through;
+}
+
 @media (max-width: 760px) {
   .app-shell {
     grid-template-columns: 1fr;

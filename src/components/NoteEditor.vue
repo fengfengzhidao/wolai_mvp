@@ -57,12 +57,31 @@ function updateBlock(blockId, text) {
   });
 }
 
+function toggleBlock(blockId, checked) {
+  const blocks =
+    props.page?.blocks.map((block) =>
+      block.id === blockId
+        ? {
+            ...block,
+            checked,
+          }
+        : block,
+    ) || [];
+
+  emit("update-page", {
+    blocks,
+    content: blocks.map((block) => block.text).join("\n\n"),
+  });
+}
+
 function getBlockShortcut(text) {
   const shortcuts = [
     { marker: "# ", type: "heading1" },
     { marker: "## ", type: "heading2" },
     { marker: "- ", type: "bullet" },
     { marker: "1. ", type: "numbered" },
+    { marker: "[] ", type: "todo" },
+    { marker: "[ ] ", type: "todo" },
   ];
 
   const shortcut = shortcuts.find((item) => text === item.marker);
@@ -143,6 +162,7 @@ async function deleteEmptyBlock(blockId) {
         :blocks="page?.blocks || []"
         :disabled="!page"
         @update-block="updateBlock"
+        @toggle-block="toggleBlock"
         @insert-block-after="insertBlockAfter"
         @delete-empty-block="deleteEmptyBlock"
       />
