@@ -230,6 +230,31 @@ textarea {
   margin-top: 28px;
 }
 
+.block-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+}
+
+.block-row.is-bullet,
+.block-row.is-numbered,
+.block-row.is-todo {
+  grid-template-columns: 28px minmax(0, 1fr);
+}
+
+.block-marker {
+  color: #bdbdbd;
+  font-size: 17px;
+  text-align: center;
+}
+
+.todo-checkbox {
+  width: 16px;
+  height: 16px;
+  margin: 0 0 0 6px;
+  accent-color: #8a4f55;
+}
+
 .text-block {
   border-radius: 4px;
   min-height: 34px;
@@ -248,6 +273,20 @@ textarea {
 .text-block:focus {
   background: #202020;
   box-shadow: inset 2px 0 0 #8a4f55;
+}
+
+.text-block.is-heading1 {
+  min-height: 46px;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.text-block.is-heading2 {
+  min-height: 40px;
+  font-size: 24px;
+  font-weight: 750;
+  line-height: 1.4;
 }
 
 @media (max-width: 760px) {

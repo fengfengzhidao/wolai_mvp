@@ -8,6 +8,16 @@ function createBlock(text = "") {
     id: crypto.randomUUID(),
     type: "paragraph",
     text,
+    checked: false,
+  };
+}
+
+function normalizeBlock(block) {
+  return {
+    id: block.id || crypto.randomUUID(),
+    type: block.type || "paragraph",
+    text: typeof block.text === "string" ? block.text : "",
+    checked: Boolean(block.checked),
   };
 }
 
@@ -26,7 +36,10 @@ function createPage(title = "未命名页面", content = "") {
 
 function migratePageBlocks(page) {
   if (Array.isArray(page.blocks) && page.blocks.length > 0) {
-    return page;
+    return {
+      ...page,
+      blocks: page.blocks.map(normalizeBlock),
+    };
   }
 
   const content = typeof page.content === "string" ? page.content : "";

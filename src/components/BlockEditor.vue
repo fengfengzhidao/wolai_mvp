@@ -37,19 +37,35 @@ defineExpose({
 
 <template>
   <div class="block-editor" aria-label="块编辑区">
-    <input
+    <div
       v-for="block in blocks"
       :key="block.id"
-      ref="blockInputs"
-      :data-block-id="block.id"
-      class="text-block"
-      type="text"
-      :value="block.text"
-      placeholder="输入内容，回车新建块"
-      :disabled="disabled"
-      @input="$emit('update-block', block.id, $event.target.value)"
-      @keydown.enter.prevent="$emit('insert-block-after', block.id)"
-      @keydown.backspace="handleBackspace($event, block.id)"
-    />
+      class="block-row"
+      :class="`is-${block.type}`"
+    >
+      <span v-if="block.type === 'bullet'" class="block-marker">•</span>
+      <span v-else-if="block.type === 'numbered'" class="block-marker">1.</span>
+      <input
+        v-else-if="block.type === 'todo'"
+        class="todo-checkbox"
+        type="checkbox"
+        :checked="block.checked"
+        :disabled="disabled"
+        aria-label="待办状态"
+      />
+      <input
+        ref="blockInputs"
+        :data-block-id="block.id"
+        class="text-block"
+        :class="`is-${block.type}`"
+        type="text"
+        :value="block.text"
+        placeholder="输入内容，回车新建块"
+        :disabled="disabled"
+        @input="$emit('update-block', block.id, $event.target.value)"
+        @keydown.enter.prevent="$emit('insert-block-after', block.id)"
+        @keydown.backspace="handleBackspace($event, block.id)"
+      />
+    </div>
   </div>
 </template>
