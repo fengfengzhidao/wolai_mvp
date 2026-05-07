@@ -9,6 +9,7 @@ const {
   saveStatus,
   createNewPage,
   selectPage,
+  deletePage,
   updateActivePage,
 } = useNotes();
 </script>
@@ -20,6 +21,7 @@ const {
       :active-page-id="activePage?.id || null"
       @create-page="createNewPage"
       @select-page="selectPage"
+      @delete-page="deletePage"
     />
     <NoteEditor
       :page="activePage"

@@ -76,6 +76,22 @@ export function useNotes() {
     saveStatus.value = "已保存";
   }
 
+  function deletePage(pageId) {
+    const nextPages = pages.value.filter((page) => page.id !== pageId);
+    pages.value = nextPages;
+
+    if (activePageId.value === pageId) {
+      activePageId.value = nextPages[0]?.id || null;
+    }
+
+    if (!activePageId.value) {
+      localStorage.removeItem(ACTIVE_PAGE_KEY);
+    }
+
+    persistPages();
+    saveStatus.value = "已保存";
+  }
+
   function updateActivePage(changes) {
     pages.value = pages.value.map((page) => {
       if (page.id !== activePageId.value) {
@@ -98,6 +114,7 @@ export function useNotes() {
     saveStatus,
     createNewPage,
     selectPage,
+    deletePage,
     updateActivePage,
   };
 }
