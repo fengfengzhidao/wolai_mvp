@@ -39,12 +39,14 @@ watch(
 );
 
 function updateBlock(blockId, text) {
+  const shortcut = getBlockShortcut(text);
   const blocks =
     props.page?.blocks.map((block) =>
       block.id === blockId
         ? {
             ...block,
-            text,
+            type: shortcut?.type || block.type,
+            text: shortcut?.text ?? text,
           }
         : block,
     ) || [];
@@ -53,6 +55,26 @@ function updateBlock(blockId, text) {
     blocks,
     content: blocks.map((block) => block.text).join("\n\n"),
   });
+}
+
+function getBlockShortcut(text) {
+  const shortcuts = [
+    { marker: "# ", type: "heading1" },
+    { marker: "## ", type: "heading2" },
+    { marker: "- ", type: "bullet" },
+    { marker: "1. ", type: "numbered" },
+  ];
+
+  const shortcut = shortcuts.find((item) => text === item.marker);
+
+  if (!shortcut) {
+    return null;
+  }
+
+  return {
+    type: shortcut.type,
+    text: "",
+  };
 }
 
 async function insertBlockAfter(blockId) {
