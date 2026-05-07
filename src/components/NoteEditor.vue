@@ -36,6 +36,23 @@ watch(
     }
   },
 );
+
+function updateBlock(blockId, text) {
+  const blocks =
+    props.page?.blocks.map((block) =>
+      block.id === blockId
+        ? {
+            ...block,
+            text,
+          }
+        : block,
+    ) || [];
+
+  emit("update-page", {
+    blocks,
+    content: blocks.map((block) => block.text).join("\n\n"),
+  });
+}
 </script>
 
 <template>
@@ -54,7 +71,11 @@ watch(
         autocomplete="off"
         :disabled="!page"
       />
-      <BlockEditor :blocks="page?.blocks || []" :disabled="!page" />
+      <BlockEditor
+        :blocks="page?.blocks || []"
+        :disabled="!page"
+        @update-block="updateBlock"
+      />
     </div>
   </section>
 </template>

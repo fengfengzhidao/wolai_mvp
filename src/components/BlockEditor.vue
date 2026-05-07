@@ -9,6 +9,8 @@ defineProps({
     default: false,
   },
 });
+
+defineEmits(["update-block"]);
 </script>
 
 <template>
@@ -21,6 +23,7 @@ defineProps({
       :value="block.text"
       placeholder="输入内容，回车新建块"
       :disabled="disabled"
+      @input="$emit('update-block', block.id, $event.target.value)"
     />
   </div>
 </template>
