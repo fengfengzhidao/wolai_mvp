@@ -45,6 +45,39 @@ export function moveBlock(blocks, blockId, direction) {
   return nextBlocks;
 }
 
+export function moveBlockBefore(blocks, blockId, targetBlockId) {
+  return moveBlockToPosition(blocks, blockId, targetBlockId, "before");
+}
+
+export function moveBlockToPosition(
+  blocks,
+  blockId,
+  targetBlockId,
+  position = "before",
+) {
+  const currentBlocks = normalizeBlocksInput(blocks);
+  const blockIndex = currentBlocks.findIndex((block) => block.id === blockId);
+  const targetIndex = currentBlocks.findIndex((block) => block.id === targetBlockId);
+
+  if (
+    blockIndex === -1 ||
+    targetIndex === -1 ||
+    blockIndex === targetIndex
+  ) {
+    return currentBlocks;
+  }
+
+  const [movingBlock] = currentBlocks.splice(blockIndex, 1);
+  const nextTargetIndex = currentBlocks.findIndex(
+    (block) => block.id === targetBlockId,
+  );
+  const insertionIndex = position === "after" ? nextTargetIndex + 1 : nextTargetIndex;
+
+  currentBlocks.splice(insertionIndex, 0, movingBlock);
+
+  return currentBlocks;
+}
+
 export function duplicateBlock(blocks, blockId) {
   const currentBlocks = normalizeBlocksInput(blocks);
   const blockIndex = currentBlocks.findIndex((block) => block.id === blockId);

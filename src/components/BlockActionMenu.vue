@@ -12,21 +12,11 @@ defineProps({
     type: String,
     default: "paragraph",
   },
-  canMoveUp: {
-    type: Boolean,
-    default: false,
-  },
-  canMoveDown: {
-    type: Boolean,
-    default: false,
-  },
 });
 
 const emit = defineEmits([
   "close",
   "change-type",
-  "move-up",
-  "move-down",
   "duplicate",
   "delete",
 ]);
@@ -47,16 +37,6 @@ function changeType(blockType) {
   }
 
   emit("change-type", type);
-  emit("close");
-}
-
-function moveUp() {
-  emit("move-up");
-  emit("close");
-}
-
-function moveDown() {
-  emit("move-down");
   emit("close");
 }
 
@@ -105,24 +85,6 @@ function deleteBlock() {
     </div>
 
     <div class="block-action-menu-group">
-      <button
-        class="block-action-menu-item"
-        type="button"
-        role="menuitem"
-        :disabled="!canMoveUp"
-        @click="moveUp"
-      >
-        上移
-      </button>
-      <button
-        class="block-action-menu-item"
-        type="button"
-        role="menuitem"
-        :disabled="!canMoveDown"
-        @click="moveDown"
-      >
-        下移
-      </button>
       <button
         class="block-action-menu-item"
         type="button"

@@ -1,7 +1,6 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import BlockActionMenu from "./BlockActionMenu.vue";
-import BulkBlockToolbar from "./BulkBlockToolbar.vue";
 
 const props = defineProps({
   blocks: {
@@ -21,7 +20,7 @@ const emit = defineEmits([
   "insert-block-after",
   "paste-blocks",
   "delete-empty-block",
-  "move-block",
+  "move-block-to-position",
   "duplicate-block",
   "delete-blocks",
 ]);
@@ -29,11 +28,17 @@ const blockInputs = ref([]);
 const focusedBlockId = ref(null);
 const isPointerSelecting = ref(false);
 const pointerStart = ref(null);
+const pointerCurrent = ref(null);
+const pointerStartedInEditable = ref(false);
 const selectedBlockIds = ref([]);
-const lastSelectedBlockId = ref(null);
+const selectionStartPoint = ref(null);
+const dragBlockId = ref(null);
+const didDropBlock = ref(false);
 const blockMenu = ref({
   isOpen: false,
   blockId: null,
+  x: 0,
+  y: 0,
 });
 const slashMenu = ref({
   isOpen: false,
@@ -117,8 +122,6 @@ const blockTypeMenuItems = computed(() =>
   })),
 );
 
-const selectedBlockCount = computed(() => selectedBlockIds.value.length);
-
 function getBlockPlaceholder(block) {
   const placeholders = {
     paragraph: "输入内容，回车新建块",
@@ -157,55 +160,12 @@ function getNumberedIndex(blockId) {
   return numberedIndex;
 }
 
-function getBlockIndex(blockId) {
-  return props.blocks.findIndex((block) => block.id === blockId);
-}
-
-function getBlockById(blockId) {
-  return props.blocks.find((block) => block.id === blockId);
-}
-
 function isBlockSelected(blockId) {
   return selectedBlockIds.value.includes(blockId);
 }
 
-function toggleBlockSelection(event, blockId) {
-  if (event.shiftKey && lastSelectedBlockId.value) {
-    selectBlockRange(lastSelectedBlockId.value, blockId);
-    return;
-  }
-
-  if (isBlockSelected(blockId)) {
-    selectedBlockIds.value = selectedBlockIds.value.filter((id) => id !== blockId);
-  } else {
-    selectedBlockIds.value = [...selectedBlockIds.value, blockId];
-  }
-
-  lastSelectedBlockId.value = blockId;
-}
-
-function selectBlockRange(fromBlockId, toBlockId) {
-  const fromIndex = getBlockIndex(fromBlockId);
-  const toIndex = getBlockIndex(toBlockId);
-
-  if (fromIndex === -1 || toIndex === -1) {
-    return;
-  }
-
-  const startIndex = Math.min(fromIndex, toIndex);
-  const endIndex = Math.max(fromIndex, toIndex);
-  const rangeIds = props.blocks
-    .slice(startIndex, endIndex + 1)
-    .map((block) => block.id);
-
-  selectedBlockIds.value = Array.from(
-    new Set([...selectedBlockIds.value, ...rangeIds]),
-  );
-}
-
 function clearBlockSelection() {
   selectedBlockIds.value = [];
-  lastSelectedBlockId.value = null;
 }
 
 async function focusBlock(blockId) {
@@ -361,23 +321,17 @@ function closeSlashMenu() {
 function openBlockMenu(event, blockId) {
   event.preventDefault();
   event.stopPropagation();
+  clearBlockSelection();
   blockMenu.value = {
     isOpen: true,
     blockId,
+    x: event.clientX,
+    y: event.clientY,
   };
 }
 
 function closeBlockMenu() {
   blockMenu.value.isOpen = false;
-}
-
-function moveBlock(direction) {
-  const blockId = blockMenu.value.blockId;
-  closeBlockMenu();
-
-  if (blockId) {
-    emit("move-block", blockId, direction);
-  }
 }
 
 async function duplicateBlock() {
@@ -424,10 +378,15 @@ function handleEditorPointerDown(event) {
     return;
   }
 
+  pointerStartedInEditable.value = Boolean(
+    event.target.closest("input, textarea"),
+  );
   pointerStart.value = {
     x: event.clientX,
     y: event.clientY,
   };
+  pointerCurrent.value = pointerStart.value;
+  selectionStartPoint.value = pointerStart.value;
   isPointerSelecting.value = false;
 }
 
@@ -438,18 +397,135 @@ function handleDocumentPointerMove(event) {
 
   const deltaX = Math.abs(event.clientX - pointerStart.value.x);
   const deltaY = Math.abs(event.clientY - pointerStart.value.y);
+  pointerCurrent.value = {
+    x: event.clientX,
+    y: event.clientY,
+  };
 
   if (deltaX > 4 || deltaY > 4) {
     isPointerSelecting.value = true;
   }
 }
 
-function handleDocumentPointerUp() {
+function handleDocumentPointerUp(event) {
+  const startPoint = selectionStartPoint.value;
+  const endPoint = {
+    x: event.clientX,
+    y: event.clientY,
+  };
+  const movedFarEnough =
+    startPoint &&
+    (Math.abs(endPoint.x - startPoint.x) > 4 ||
+      Math.abs(endPoint.y - startPoint.y) > 4);
+  const shouldSelectBlocks =
+    movedFarEnough && startPoint && !didDropBlock.value;
+
+  pointerCurrent.value = endPoint;
   pointerStart.value = null;
 
   window.setTimeout(() => {
+    if (shouldSelectBlocks) {
+      selectBlocksInPointerRange(startPoint);
+    }
+
+    selectionStartPoint.value = null;
+    pointerCurrent.value = null;
+    pointerStartedInEditable.value = false;
+    didDropBlock.value = false;
     isPointerSelecting.value = window.getSelection()?.toString().length > 0;
   }, 0);
+}
+
+function selectBlocksInPointerRange(startPoint) {
+  const selection = window.getSelection();
+
+  if (selection?.toString()) {
+    selection.removeAllRanges();
+  }
+
+  const blockShells = Array.from(document.querySelectorAll(".block-shell"));
+  const endPoint = pointerCurrent.value || startPoint;
+  const selectionRect = {
+    left: Math.min(startPoint.x, endPoint.x),
+    right: Math.max(startPoint.x, endPoint.x),
+    top: Math.min(startPoint.y, endPoint.y),
+    bottom: Math.max(startPoint.y, endPoint.y),
+  };
+
+  selectedBlockIds.value = blockShells
+    .filter((shell) => {
+      const rect = shell.getBoundingClientRect();
+      return (
+        rect.left < selectionRect.right &&
+        rect.right > selectionRect.left &&
+        rect.top < selectionRect.bottom &&
+        rect.bottom > selectionRect.top
+      );
+    })
+    .map((shell) => shell.dataset.blockId)
+    .filter(Boolean);
+}
+
+function handleBlockDragStart(event, blockId) {
+  if (pointerStartedInEditable.value || event.target.closest("input, textarea")) {
+    event.preventDefault();
+    return;
+  }
+
+  dragBlockId.value = blockId;
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("text/plain", blockId);
+}
+
+function handleBlockDragOver(event, blockId) {
+  if (!dragBlockId.value || dragBlockId.value === blockId) {
+    return;
+  }
+
+  event.preventDefault();
+  event.dataTransfer.dropEffect = "move";
+}
+
+function handleBlockDrop(event, blockId) {
+  event.preventDefault();
+
+  if (
+    pointerStartedInEditable.value ||
+    !dragBlockId.value ||
+    dragBlockId.value === blockId
+  ) {
+    dragBlockId.value = null;
+    return;
+  }
+
+  const targetRect = event.currentTarget.getBoundingClientRect();
+  const position =
+    event.clientY > targetRect.top + targetRect.height / 2 ? "after" : "before";
+
+  emit("move-block-to-position", dragBlockId.value, blockId, position);
+  didDropBlock.value = true;
+  dragBlockId.value = null;
+}
+
+function handleBlockDragEnd() {
+  dragBlockId.value = null;
+}
+
+function handleDocumentKeydown(event) {
+  if (event.key !== "Backspace" || selectedBlockIds.value.length === 0) {
+    return;
+  }
+
+  const target = event.target;
+  if (
+    target instanceof HTMLElement &&
+    target.closest(".block-action-menu, .slash-menu")
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+  deleteSelectedBlocks();
 }
 
 function handleDocumentPointerDown(event) {
@@ -473,7 +549,7 @@ function handleDocumentPointerDown(event) {
   if (
     blockMenu.value.isOpen &&
     !target.closest(".block-action-menu") &&
-    !target.closest(".block-menu-button")
+    !target.closest(".block-shell")
   ) {
     closeBlockMenu();
   }
@@ -499,12 +575,14 @@ onMounted(() => {
   document.addEventListener("pointerdown", handleDocumentPointerDown);
   document.addEventListener("pointermove", handleDocumentPointerMove);
   document.addEventListener("pointerup", handleDocumentPointerUp);
+  document.addEventListener("keydown", handleDocumentKeydown);
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener("pointerdown", handleDocumentPointerDown);
   document.removeEventListener("pointermove", handleDocumentPointerMove);
   document.removeEventListener("pointerup", handleDocumentPointerUp);
+  document.removeEventListener("keydown", handleDocumentKeydown);
 });
 </script>
 
@@ -514,48 +592,19 @@ onBeforeUnmount(() => {
     aria-label="块编辑区"
     @pointerdown="handleEditorPointerDown"
   >
-    <BulkBlockToolbar
-      :selected-count="selectedBlockCount"
-      @delete-selected="deleteSelectedBlocks"
-      @clear-selection="clearBlockSelection"
-    />
-
     <div
       v-for="block in blocks"
       :key="block.id"
+      :data-block-id="block.id"
       class="block-shell"
       :class="{ 'is-selected': isBlockSelected(block.id) }"
+      draggable="true"
+      @contextmenu="openBlockMenu($event, block.id)"
+      @dragstart="handleBlockDragStart($event, block.id)"
+      @dragover="handleBlockDragOver($event, block.id)"
+      @drop="handleBlockDrop($event, block.id)"
+      @dragend="handleBlockDragEnd"
     >
-      <div class="block-controls">
-        <button
-          class="block-select-button"
-          :class="{ 'is-selected': isBlockSelected(block.id) }"
-          type="button"
-          :aria-label="isBlockSelected(block.id) ? '取消选择块' : '选择块'"
-          @click="toggleBlockSelection($event, block.id)"
-        ></button>
-        <button
-          class="block-menu-button"
-          type="button"
-          aria-label="块操作"
-          @click="openBlockMenu($event, block.id)"
-        >
-          ⋯
-        </button>
-        <BlockActionMenu
-          :is-open="blockMenu.isOpen && blockMenu.blockId === block.id"
-          :block-types="blockTypeMenuItems"
-          :current-type="block.type"
-          :can-move-up="getBlockIndex(block.id) > 0"
-          :can-move-down="getBlockIndex(block.id) < blocks.length - 1"
-          @close="closeBlockMenu"
-          @change-type="selectMenuBlockType"
-          @move-up="moveBlock('up')"
-          @move-down="moveBlock('down')"
-          @duplicate="duplicateBlock"
-          @delete="deleteMenuBlock"
-        />
-      </div>
       <div class="block-row" :class="`is-${block.type}`">
         <span v-if="block.type === 'bullet'" class="block-marker">•</span>
         <span v-else-if="block.type === 'numbered'" class="block-marker">
@@ -603,6 +652,16 @@ onBeforeUnmount(() => {
           @keydown="handleKeydown($event, block.id)"
         />
       </div>
+      <BlockActionMenu
+        :is-open="blockMenu.isOpen && blockMenu.blockId === block.id"
+        :block-types="blockTypeMenuItems"
+        :current-type="block.type"
+        :style="{ left: `${blockMenu.x}px`, top: `${blockMenu.y}px` }"
+        @close="closeBlockMenu"
+        @change-type="selectMenuBlockType"
+        @duplicate="duplicateBlock"
+        @delete="deleteMenuBlock"
+      />
       <div
         v-if="slashMenu.isOpen && slashMenu.blockId === block.id"
         class="slash-menu"

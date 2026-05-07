@@ -9,7 +9,7 @@ import {
   duplicateBlock as duplicateBlockById,
   getContentFromBlocks,
   insertBlockAfter as insertBlockAfterId,
-  moveBlock as moveBlockById,
+  moveBlockToPosition,
   toggleBlockChecked,
   updateBlockText,
 } from "../utils/blockOperations";
@@ -258,8 +258,13 @@ async function deleteEmptyBlock(blockId) {
   blockEditor.value?.focusBlock(focusBlockId);
 }
 
-async function moveBlock(blockId, direction) {
-  const blocks = moveBlockById(props.page?.blocks || [], blockId, direction);
+async function moveBlockToTarget(blockId, targetBlockId, position) {
+  const blocks = moveBlockToPosition(
+    props.page?.blocks || [],
+    blockId,
+    targetBlockId,
+    position,
+  );
 
   emit("update-page", {
     blocks,
@@ -327,7 +332,7 @@ async function deleteBlocks(blockIds) {
         @insert-block-after="insertBlockAfter"
         @paste-blocks="pasteBlocks"
         @delete-empty-block="deleteEmptyBlock"
-        @move-block="moveBlock"
+        @move-block-to-position="moveBlockToTarget"
         @duplicate-block="duplicateBlock"
         @delete-blocks="deleteBlocks"
       />
