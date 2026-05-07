@@ -57,6 +57,19 @@ function updateBlock(blockId, text) {
   });
 }
 
+function createBlock(type = "paragraph", text = "") {
+  return {
+    id: crypto.randomUUID(),
+    type,
+    text,
+    checked: false,
+  };
+}
+
+function getContentFromBlocks(blocks) {
+  return blocks.map((block) => block.text).join("\n\n");
+}
+
 function toggleBlock(blockId, checked) {
   const blocks =
     props.page?.blocks.map((block) =>
@@ -101,6 +114,7 @@ function getBlockShortcut(text) {
     { marker: "1. ", type: "numbered" },
     { marker: "[] ", type: "todo" },
     { marker: "[ ] ", type: "todo" },
+    { marker: "```", type: "code" },
   ];
 
   const shortcut = shortcuts.find((item) => text === item.marker);
@@ -116,12 +130,7 @@ function getBlockShortcut(text) {
 }
 
 async function insertBlockAfter(blockId, type = "paragraph") {
-  const nextBlock = {
-    id: crypto.randomUUID(),
-    type,
-    text: "",
-    checked: false,
-  };
+  const nextBlock = createBlock(type);
   const blocks = [];
 
   for (const block of props.page?.blocks || []) {
@@ -133,11 +142,139 @@ async function insertBlockAfter(blockId, type = "paragraph") {
 
   emit("update-page", {
     blocks,
-    content: blocks.map((block) => block.text).join("\n\n"),
+    content: getContentFromBlocks(blocks),
   });
 
   await nextTick();
   blockEditor.value?.focusBlock(nextBlock.id);
+}
+
+function parsePastedText(text) {
+  const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+  const blocks = [];
+  let codeLines = null;
+
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+
+    if (trimmedLine.startsWith("```")) {
+      if (codeLines) {
+        blocks.push(createBlock("code", codeLines.join("\n")));
+        codeLines = null;
+      } else {
+        codeLines = [];
+      }
+      continue;
+    }
+
+    if (codeLines) {
+      codeLines.push(line);
+      continue;
+    }
+
+    const parsedBlock = parsePastedLine(line);
+    if (parsedBlock) {
+      blocks.push(parsedBlock);
+    }
+  }
+
+  if (codeLines) {
+    blocks.push(createBlock("code", codeLines.join("\n")));
+  }
+
+  return blocks.length > 0 ? blocks : [createBlock("paragraph", text)];
+}
+
+function parsePastedLine(line) {
+  const trimmedLine = line.trim();
+
+  if (!trimmedLine) {
+    return null;
+  }
+
+  if (trimmedLine.startsWith("## ")) {
+    return createBlock("heading2", trimmedLine.slice(3));
+  }
+
+  if (trimmedLine.startsWith("# ")) {
+    return createBlock("heading1", trimmedLine.slice(2));
+  }
+
+  if (trimmedLine.startsWith("- ")) {
+    return createBlock("bullet", trimmedLine.slice(2));
+  }
+
+  const numberedMatch = trimmedLine.match(/^\d+\.\s+(.*)$/);
+  if (numberedMatch) {
+    return createBlock("numbered", numberedMatch[1]);
+  }
+
+  const todoMatch = trimmedLine.match(/^\[(x|X| )?\]\s+(.*)$/);
+  if (todoMatch) {
+    return {
+      ...createBlock("todo", todoMatch[2]),
+      checked: todoMatch[1]?.toLowerCase() === "x",
+    };
+  }
+
+  return createBlock("paragraph", line);
+}
+
+async function pasteBlocks(blockId, pasteDetail) {
+  const currentBlocks = props.page?.blocks || [];
+  const blockIndex = currentBlocks.findIndex((block) => block.id === blockId);
+
+  if (blockIndex === -1) {
+    return;
+  }
+
+  const currentBlock = currentBlocks[blockIndex];
+  const selectionStart = pasteDetail.selectionStart ?? currentBlock.text.length;
+  const selectionEnd = pasteDetail.selectionEnd ?? selectionStart;
+  const beforeText = currentBlock.text.slice(0, selectionStart);
+  const afterText = currentBlock.text.slice(selectionEnd);
+  const pastedBlocks = parsePastedText(pasteDetail.text);
+  const firstPastedBlock = pastedBlocks[0];
+  const replacementBlocks = pastedBlocks.map((block, index) => {
+    if (index === 0) {
+      return {
+        ...block,
+        id: currentBlock.id,
+        text: `${beforeText}${block.text}`,
+      };
+    }
+
+    if (index === pastedBlocks.length - 1) {
+      return {
+        ...block,
+        text: `${block.text}${afterText}`,
+      };
+    }
+
+    return block;
+  });
+
+  if (pastedBlocks.length === 1) {
+    replacementBlocks[0] = {
+      ...firstPastedBlock,
+      id: currentBlock.id,
+      text: `${beforeText}${firstPastedBlock.text}${afterText}`,
+    };
+  }
+
+  const blocks = [
+    ...currentBlocks.slice(0, blockIndex),
+    ...replacementBlocks,
+    ...currentBlocks.slice(blockIndex + 1),
+  ];
+
+  emit("update-page", {
+    blocks,
+    content: getContentFromBlocks(blocks),
+  });
+
+  await nextTick();
+  blockEditor.value?.focusBlock(replacementBlocks.at(-1)?.id || blockId);
 }
 
 async function deleteEmptyBlock(blockId) {
@@ -185,6 +322,7 @@ async function deleteEmptyBlock(blockId) {
         @toggle-block="toggleBlock"
         @change-block-type="changeBlockType"
         @insert-block-after="insertBlockAfter"
+        @paste-blocks="pasteBlocks"
         @delete-empty-block="deleteEmptyBlock"
       />
     </div>

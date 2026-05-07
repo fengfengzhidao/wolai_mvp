@@ -17,6 +17,7 @@ const emit = defineEmits([
   "toggle-block",
   "change-block-type",
   "insert-block-after",
+  "paste-blocks",
   "delete-empty-block",
 ]);
 const blockInputs = ref([]);
@@ -67,6 +68,12 @@ const blockTypeOptions = [
     description: "可勾选任务",
     keywords: ["task", "check", "todo"],
   },
+  {
+    type: "code",
+    label: "代码",
+    description: "多行代码块",
+    keywords: ["code", "pre", "```"],
+  },
 ];
 
 const listBlockTypes = ["bullet", "numbered"];
@@ -100,6 +107,7 @@ function getBlockPlaceholder(block) {
     bullet: "列表项",
     numbered: "列表项",
     todo: "待办事项",
+    code: "输入代码",
   };
 
   if (focusedBlockId.value !== block.id || isPointerSelecting.value) {
@@ -144,9 +152,29 @@ function handleBackspace(event, blockId) {
   emit("delete-empty-block", blockId);
 }
 
+function handlePaste(event, blockId) {
+  const pastedText = event.clipboardData?.getData("text/plain") || "";
+
+  if (!pastedText.includes("\n")) {
+    return;
+  }
+
+  event.preventDefault();
+  emit("paste-blocks", blockId, {
+    text: pastedText,
+    selectionStart: event.target.selectionStart,
+    selectionEnd: event.target.selectionEnd,
+  });
+}
+
 function handleInput(event, blockId) {
   const value = event.target.value;
+  const block = props.blocks.find((item) => item.id === blockId);
   emit("update-block", blockId, value);
+
+  if (block?.type === "code") {
+    return;
+  }
 
   if (value.startsWith("/")) {
     openSlashMenu(blockId, value.slice(1));
@@ -162,6 +190,19 @@ function handleKeydown(event, blockId) {
   const block = props.blocks.find((item) => item.id === blockId);
 
   if (!slashMenu.value.isOpen || slashMenu.value.blockId !== blockId) {
+    if (block?.type === "code") {
+      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        emit("insert-block-after", blockId);
+      }
+
+      if (event.key === "Backspace") {
+        handleBackspace(event, blockId);
+      }
+
+      return;
+    }
+
     if (event.key === "Enter") {
       event.preventDefault();
       handleEnter(block);
@@ -221,6 +262,11 @@ function handleEnter(block) {
     }
 
     emit("insert-block-after", block.id, block.type);
+    return;
+  }
+
+  if (block.type === "code") {
+    emit("insert-block-after", block.id);
     return;
   }
 
@@ -345,6 +391,7 @@ onBeforeUnmount(() => {
           @change="$emit('toggle-block', block.id, $event.target.checked)"
         />
         <input
+          v-if="block.type !== 'code'"
           ref="blockInputs"
           :data-block-id="block.id"
           class="text-block"
@@ -353,6 +400,23 @@ onBeforeUnmount(() => {
           :value="block.text"
           :placeholder="getBlockPlaceholder(block)"
           :disabled="disabled"
+          @focus="focusedBlockId = block.id"
+          @blur="focusedBlockId = null"
+          @input="handleInput($event, block.id)"
+          @keydown="handleKeydown($event, block.id)"
+          @paste="handlePaste($event, block.id)"
+        />
+        <textarea
+          v-else
+          ref="blockInputs"
+          :data-block-id="block.id"
+          class="text-block code-block"
+          :class="`is-${block.type}`"
+          :value="block.text"
+          :placeholder="getBlockPlaceholder(block)"
+          :disabled="disabled"
+          rows="4"
+          spellcheck="false"
           @focus="focusedBlockId = block.id"
           @blur="focusedBlockId = null"
           @input="handleInput($event, block.id)"

@@ -259,6 +259,10 @@ textarea {
   grid-template-columns: 28px minmax(0, 1fr);
 }
 
+.block-row.is-code {
+  align-items: stretch;
+}
+
 .block-marker {
   color: #bdbdbd;
   font-size: 17px;
@@ -304,6 +308,31 @@ textarea {
   font-size: 24px;
   font-weight: 750;
   line-height: 1.4;
+}
+
+.code-block {
+  min-height: 124px;
+  padding: 12px 14px;
+  border: 1px solid #303030;
+  border-radius: 6px;
+  color: #e5e5e5;
+  background: #111111;
+  font-family:
+    "Cascadia Code", "Fira Code", Consolas, "Liberation Mono", monospace;
+  font-size: 14px;
+  line-height: 1.65;
+  resize: vertical;
+  white-space: pre;
+}
+
+.code-block:hover,
+.code-block:focus {
+  background: #111111;
+}
+
+.code-block:focus {
+  border-color: #574044;
+  box-shadow: inset 2px 0 0 #8a4f55;
 }
 
 .block-row.is-todo:has(.todo-checkbox:checked) .text-block {

@@ -83,12 +83,16 @@ npm run build
 - `bullet` 无序列表块
 - `numbered` 有序列表块
 - `todo` 待办块
+- `code` 代码块
 - `# ` 转一级标题
 - `## ` 转二级标题
 - `- ` 转无序列表
 - `1. ` 转有序列表
 - `[] ` 或 `[ ] ` 转待办块
+- 三反引号转代码块
 - 待办块可勾选并保存状态
+- 多行文本粘贴会拆分为多个块
+- 粘贴内容会识别标题、列表、待办和三反引号代码块
 
 块编辑阶段 4：
 
@@ -119,7 +123,7 @@ npm run build
 ```js
 {
   id: string,
-  type: "paragraph" | "heading1" | "heading2" | "bullet" | "numbered" | "todo",
+  type: "paragraph" | "heading1" | "heading2" | "bullet" | "numbered" | "todo" | "code",
   text: string,
   checked: boolean
 }
