@@ -864,7 +864,7 @@ watch(
           </template>
         </div>
         <CodeBlock
-          v-else
+          v-if="block.type === 'code'"
           ref="blockInputs"
           :block="block"
           :disabled="disabled"
