@@ -1,5 +1,6 @@
 <script setup>
 import { computed, nextTick, ref, watch } from "vue";
+import BlockEditor from "./BlockEditor.vue";
 import { formatTime } from "../utils/formatTime";
 
 const props = defineProps({
@@ -22,15 +23,6 @@ const title = computed({
   },
   set(value) {
     emit("update-page", { title: value });
-  },
-});
-
-const content = computed({
-  get() {
-    return props.page?.content || "";
-  },
-  set(value) {
-    emit("update-page", { content: value });
   },
 });
 
@@ -62,12 +54,7 @@ watch(
         autocomplete="off"
         :disabled="!page"
       />
-      <textarea
-        v-model="content"
-        class="content-input"
-        placeholder="开始记录..."
-        :disabled="!page"
-      ></textarea>
+      <BlockEditor :blocks="page?.blocks || []" :disabled="!page" />
     </div>
   </section>
 </template>
