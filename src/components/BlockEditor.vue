@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, ref } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 
 defineProps({
   blocks: {
@@ -138,6 +138,26 @@ function closeSlashMenu() {
   slashMenu.value.isOpen = false;
 }
 
+function handleDocumentPointerDown(event) {
+  if (!slashMenu.value.isOpen) {
+    return;
+  }
+
+  const target = event.target;
+  if (!(target instanceof Element)) {
+    closeSlashMenu();
+    return;
+  }
+
+  const activeBlockInput = target.closest("[data-block-id]");
+  const isActiveBlock =
+    activeBlockInput?.dataset.blockId === slashMenu.value.blockId;
+
+  if (!target.closest(".slash-menu") && !isActiveBlock) {
+    closeSlashMenu();
+  }
+}
+
 async function selectBlockType(type) {
   const blockId = slashMenu.value.blockId;
   closeSlashMenu();
@@ -152,6 +172,14 @@ async function selectBlockType(type) {
 
 defineExpose({
   focusBlock,
+});
+
+onMounted(() => {
+  document.addEventListener("pointerdown", handleDocumentPointerDown);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener("pointerdown", handleDocumentPointerDown);
 });
 </script>
 
