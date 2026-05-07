@@ -1,6 +1,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import BlockActionMenu from "./BlockActionMenu.vue";
+import CodeBlock from "./CodeBlock.vue";
 
 const props = defineProps({
   blocks: {
@@ -15,6 +16,7 @@ const props = defineProps({
 
 const emit = defineEmits([
   "update-block",
+  "change-block-language",
   "toggle-block",
   "change-block-type",
   "insert-block-after",
@@ -188,8 +190,23 @@ function clearBlockSelection() {
 
 async function focusBlock(blockId) {
   await nextTick();
-  const input = blockInputs.value.find((item) => item?.dataset.blockId === blockId);
+  const input = blockInputs.value.find(
+    (item) => item?.dataset?.blockId === blockId || item?.$el?.dataset?.blockId === blockId,
+  );
+  if (input?.focusEditor) {
+    input.focusEditor();
+    return;
+  }
+
   input?.focus();
+}
+
+function updateCodeBlock(blockId, text) {
+  emit("update-block", blockId, text);
+}
+
+function changeCodeBlockLanguage(blockId, language) {
+  emit("change-block-language", blockId, language);
 }
 
 function resizeBlockInput(input) {
@@ -692,21 +709,17 @@ watch(
           @keydown="handleKeydown($event, block.id)"
           @paste="handlePaste($event, block.id)"
         />
-        <textarea
+        <CodeBlock
           v-else
           ref="blockInputs"
-          :data-block-id="block.id"
-          class="text-block code-block"
-          :class="`is-${block.type}`"
-          :value="block.text"
-          :placeholder="getBlockPlaceholder(block)"
+          :block="block"
           :disabled="disabled"
-          rows="4"
-          spellcheck="false"
+          :data-block-id="block.id"
+          @update-code="updateCodeBlock"
+          @change-language="changeCodeBlockLanguage"
+          @insert-block-after="$emit('insert-block-after', block.id)"
           @focus="focusedBlockId = block.id"
           @blur="focusedBlockId = null"
-          @input="handleInput($event, block.id)"
-          @keydown="handleKeydown($event, block.id)"
         />
       </div>
       <BlockActionMenu

@@ -13,11 +13,19 @@ function createBlock(text = "") {
 }
 
 function normalizeBlock(block) {
+  const type = block.type || "paragraph";
+
   return {
     id: block.id || crypto.randomUUID(),
-    type: block.type || "paragraph",
+    type,
     text: typeof block.text === "string" ? block.text : "",
     checked: Boolean(block.checked),
+    language:
+      type === "code"
+        ? typeof block.language === "string"
+          ? block.language
+          : "plaintext"
+        : undefined,
   };
 }
 

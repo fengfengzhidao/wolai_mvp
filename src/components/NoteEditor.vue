@@ -2,6 +2,7 @@
 import { computed, nextTick, ref, watch } from "vue";
 import BlockEditor from "./BlockEditor.vue";
 import { formatTime } from "../utils/formatTime";
+import { normalizeCodeLanguage } from "../utils/codeLanguages";
 import {
   changeBlockType as changeBlocksType,
   createBlock,
@@ -11,6 +12,7 @@ import {
   insertBlockAfter as insertBlockAfterId,
   moveBlockToPosition,
   toggleBlockChecked,
+  updateBlockLanguage,
   updateBlockText,
 } from "../utils/blockOperations";
 
@@ -50,10 +52,20 @@ watch(
 );
 
 function updateBlock(blockId, text) {
+  const currentBlock = props.page?.blocks.find((block) => block.id === blockId);
   const shortcut = getBlockShortcut(text);
-  const blocks = shortcut
+  const blocks = shortcut && currentBlock?.type !== "code"
     ? changeBlocksType(props.page?.blocks || [], blockId, shortcut.type, shortcut.text)
     : updateBlockText(props.page?.blocks || [], blockId, text);
+
+  emit("update-page", {
+    blocks,
+    content: getContentFromBlocks(blocks),
+  });
+}
+
+function changeBlockLanguage(blockId, language) {
+  const blocks = updateBlockLanguage(props.page?.blocks || [], blockId, language);
 
   emit("update-page", {
     blocks,
@@ -122,16 +134,23 @@ function parsePastedText(text) {
   const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
   const blocks = [];
   let codeLines = null;
+  let codeLanguage = "plaintext";
 
   for (const line of lines) {
     const trimmedLine = line.trim();
 
     if (trimmedLine.startsWith("```")) {
       if (codeLines) {
-        blocks.push(createBlock("code", codeLines.join("\n")));
+        blocks.push(
+          createBlock("code", codeLines.join("\n"), {
+            language: codeLanguage,
+          }),
+        );
         codeLines = null;
+        codeLanguage = "plaintext";
       } else {
         codeLines = [];
+        codeLanguage = normalizeCodeLanguage(trimmedLine.slice(3));
       }
       continue;
     }
@@ -148,7 +167,11 @@ function parsePastedText(text) {
   }
 
   if (codeLines) {
-    blocks.push(createBlock("code", codeLines.join("\n")));
+    blocks.push(
+      createBlock("code", codeLines.join("\n"), {
+        language: codeLanguage,
+      }),
+    );
   }
 
   return blocks.length > 0 ? blocks : [createBlock("paragraph", text)];
@@ -327,6 +350,7 @@ async function deleteBlocks(blockIds) {
         :blocks="page?.blocks || []"
         :disabled="!page"
         @update-block="updateBlock"
+        @change-block-language="changeBlockLanguage"
         @toggle-block="toggleBlock"
         @change-block-type="changeBlockType"
         @insert-block-after="insertBlockAfter"

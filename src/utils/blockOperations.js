@@ -4,12 +4,19 @@ export function getContentFromBlocks(blocks) {
 
 export function createBlock(type = "paragraph", text = "", overrides = {}) {
   const blockType = overrides.type || type;
+  const blockLanguage =
+    typeof overrides.language === "string"
+      ? overrides.language
+      : blockType === "code"
+        ? "plaintext"
+        : undefined;
 
   return {
     id: crypto.randomUUID(),
     type: blockType,
     text,
     checked: false,
+    language: blockLanguage,
     ...overrides,
     type: blockType,
     text: typeof overrides.text === "string" ? overrides.text : text,
@@ -19,6 +26,7 @@ export function createBlock(type = "paragraph", text = "", overrides = {}) {
         : blockType === "todo"
           ? false
           : false,
+    ...(blockLanguage ? { language: blockLanguage } : {}),
   };
 }
 
@@ -92,6 +100,7 @@ export function duplicateBlock(blocks, blockId) {
   const sourceBlock = currentBlocks[blockIndex];
   const duplicatedBlock = createBlock(sourceBlock.type, sourceBlock.text, {
     checked: Boolean(sourceBlock.checked),
+    language: sourceBlock.language,
   });
   const nextBlocks = [
     ...currentBlocks.slice(0, blockIndex + 1),
@@ -139,6 +148,7 @@ export function changeBlockType(blocks, blockId, type, text = "") {
           type,
           text,
           checked: type === "todo" ? Boolean(block.checked) : false,
+          language: type === "code" ? block.language || "plaintext" : undefined,
         }
       : block,
   );
@@ -161,6 +171,17 @@ export function toggleBlockChecked(blocks, blockId, checked) {
       ? {
           ...block,
           checked,
+        }
+      : block,
+  );
+}
+
+export function updateBlockLanguage(blocks, blockId, language) {
+  return normalizeBlocksInput(blocks).map((block) =>
+    block.id === blockId
+      ? {
+          ...block,
+          language,
         }
       : block,
   );

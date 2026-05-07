@@ -93,6 +93,9 @@ npm run build
 - 待办块可勾选并保存状态
 - 多行文本粘贴会拆分为多个块
 - 粘贴内容会识别标题、列表、待办和三反引号代码块
+- 三反引号代码块支持识别语言，例如 ```yaml
+- 代码块使用 CodeMirror 6，支持实时语法高亮
+- 代码块支持语言选择和复制代码
 
 块编辑阶段 3：
 
@@ -136,7 +139,8 @@ npm run build
   id: string,
   type: "paragraph" | "heading1" | "heading2" | "bullet" | "numbered" | "todo" | "code",
   text: string,
-  checked: boolean
+  checked: boolean,
+  language?: string
 }
 ```
 
