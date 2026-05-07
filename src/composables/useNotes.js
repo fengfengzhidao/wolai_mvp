@@ -3,6 +3,14 @@ import { computed, ref } from "vue";
 const STORAGE_KEY = "wolai_mvp_pages";
 const ACTIVE_PAGE_KEY = "wolai_mvp_active_page";
 
+function createBlock(text = "") {
+  return {
+    id: crypto.randomUUID(),
+    type: "paragraph",
+    text,
+  };
+}
+
 function createPage(title = "未命名页面", content = "") {
   const now = Date.now();
 
@@ -10,15 +18,31 @@ function createPage(title = "未命名页面", content = "") {
     id: crypto.randomUUID(),
     title,
     content,
+    blocks: [createBlock(content)],
     createdAt: now,
     updatedAt: now,
+  };
+}
+
+function migratePageBlocks(page) {
+  if (Array.isArray(page.blocks) && page.blocks.length > 0) {
+    return page;
+  }
+
+  const content = typeof page.content === "string" ? page.content : "";
+  const lines = content.split(/\n{2,}/).filter((line) => line.trim().length > 0);
+
+  return {
+    ...page,
+    content,
+    blocks: lines.length > 0 ? lines.map((line) => createBlock(line)) : [createBlock()],
   };
 }
 
 function loadPages() {
   try {
     const storedPages = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    return Array.isArray(storedPages) ? storedPages : [];
+    return Array.isArray(storedPages) ? storedPages.map(migratePageBlocks) : [];
   } catch {
     return [];
   }
