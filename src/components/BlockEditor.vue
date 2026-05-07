@@ -190,15 +190,24 @@ function clearBlockSelection() {
 
 async function focusBlock(blockId) {
   await nextTick();
+  focusBlockAt(blockId, "start");
+}
+
+async function focusBlockAt(blockId, position = "start") {
+  await nextTick();
   const input = blockInputs.value.find(
     (item) => item?.dataset?.blockId === blockId || item?.$el?.dataset?.blockId === blockId,
   );
   if (input?.focusEditor) {
-    input.focusEditor();
+    input.focusEditor(position);
     return;
   }
 
   input?.focus();
+  if (input instanceof HTMLTextAreaElement) {
+    const cursorPosition = position === "end" ? input.value.length : 0;
+    input.setSelectionRange(cursorPosition, cursorPosition);
+  }
 }
 
 function updateCodeBlock(blockId, text) {
@@ -289,6 +298,16 @@ function handleKeydown(event, blockId) {
       handleEnter(block);
     }
 
+    if (event.key === "ArrowUp" && isAtTextStart(event.target)) {
+      event.preventDefault();
+      focusAdjacentBlock(blockId, "previous");
+    }
+
+    if (event.key === "ArrowDown" && isAtTextEnd(event.target)) {
+      event.preventDefault();
+      focusAdjacentBlock(blockId, "next");
+    }
+
     if (event.key === "Backspace") {
       handleBackspace(event, blockId);
     }
@@ -329,6 +348,41 @@ function handleKeydown(event, blockId) {
     event.preventDefault();
     closeSlashMenu();
   }
+}
+
+function isAtTextStart(target) {
+  return (
+    target instanceof HTMLTextAreaElement &&
+    target.selectionStart === 0 &&
+    target.selectionEnd === 0
+  );
+}
+
+function isAtTextEnd(target) {
+  return (
+    target instanceof HTMLTextAreaElement &&
+    target.selectionStart === target.value.length &&
+    target.selectionEnd === target.value.length
+  );
+}
+
+function focusAdjacentBlock(blockId, direction) {
+  const blockIndex = props.blocks.findIndex((block) => block.id === blockId);
+
+  if (blockIndex === -1) {
+    return;
+  }
+
+  const nextBlock =
+    direction === "previous"
+      ? props.blocks[blockIndex - 1]
+      : props.blocks[blockIndex + 1];
+
+  if (!nextBlock) {
+    return;
+  }
+
+  focusBlockAt(nextBlock.id, direction === "previous" ? "end" : "start");
 }
 
 function handleEnter(block) {
@@ -718,6 +772,7 @@ watch(
           @update-code="updateCodeBlock"
           @change-language="changeCodeBlockLanguage"
           @insert-block-after="$emit('insert-block-after', block.id)"
+          @focus-adjacent="focusAdjacentBlock"
           @focus="focusedBlockId = block.id"
           @blur="focusedBlockId = null"
         />

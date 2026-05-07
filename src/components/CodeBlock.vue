@@ -24,6 +24,7 @@ const emit = defineEmits([
   "update-code",
   "change-language",
   "insert-block-after",
+  "focus-adjacent",
   "focus",
   "blur",
 ]);
@@ -72,6 +73,32 @@ function createEditor() {
               key: "Mod-Enter",
               run() {
                 emit("insert-block-after", props.block.id);
+                return true;
+              },
+            },
+          ]),
+        ),
+        Prec.high(
+          keymap.of([
+            {
+              key: "ArrowUp",
+              run(view) {
+                if (!isAtDocumentStart(view)) {
+                  return false;
+                }
+
+                emit("focus-adjacent", props.block.id, "previous");
+                return true;
+              },
+            },
+            {
+              key: "ArrowDown",
+              run(view) {
+                if (!isAtDocumentEnd(view)) {
+                  return false;
+                }
+
+                emit("focus-adjacent", props.block.id, "next");
                 return true;
               },
             },
@@ -145,8 +172,31 @@ async function copyCode() {
   }, 1200);
 }
 
-function focusEditor() {
-  editorView?.focus();
+function isAtDocumentStart(view) {
+  return view.state.selection.main.empty && view.state.selection.main.head === 0;
+}
+
+function isAtDocumentEnd(view) {
+  return (
+    view.state.selection.main.empty &&
+    view.state.selection.main.head === view.state.doc.length
+  );
+}
+
+function focusEditor(position = "start") {
+  if (!editorView) {
+    return;
+  }
+
+  const cursorPosition = position === "end" ? editorView.state.doc.length : 0;
+
+  editorView.dispatch({
+    selection: {
+      anchor: cursorPosition,
+    },
+    scrollIntoView: true,
+  });
+  editorView.focus();
 }
 
 defineExpose({
