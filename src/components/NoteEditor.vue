@@ -2,6 +2,17 @@
 import { computed, nextTick, ref, watch } from "vue";
 import BlockEditor from "./BlockEditor.vue";
 import { formatTime } from "../utils/formatTime";
+import {
+  changeBlockType as changeBlocksType,
+  createBlock,
+  deleteBlocks as deleteBlocksByIds,
+  duplicateBlock as duplicateBlockById,
+  getContentFromBlocks,
+  insertBlockAfter as insertBlockAfterId,
+  moveBlock as moveBlockById,
+  toggleBlockChecked,
+  updateBlockText,
+} from "../utils/blockOperations";
 
 const props = defineProps({
   page: {
@@ -40,69 +51,31 @@ watch(
 
 function updateBlock(blockId, text) {
   const shortcut = getBlockShortcut(text);
-  const blocks =
-    props.page?.blocks.map((block) =>
-      block.id === blockId
-        ? {
-            ...block,
-            type: shortcut?.type || block.type,
-            text: shortcut?.text ?? text,
-          }
-        : block,
-    ) || [];
+  const blocks = shortcut
+    ? changeBlocksType(props.page?.blocks || [], blockId, shortcut.type, shortcut.text)
+    : updateBlockText(props.page?.blocks || [], blockId, text);
 
   emit("update-page", {
     blocks,
-    content: blocks.map((block) => block.text).join("\n\n"),
+    content: getContentFromBlocks(blocks),
   });
 }
 
-function createBlock(type = "paragraph", text = "") {
-  return {
-    id: crypto.randomUUID(),
-    type,
-    text,
-    checked: false,
-  };
-}
-
-function getContentFromBlocks(blocks) {
-  return blocks.map((block) => block.text).join("\n\n");
-}
-
 function toggleBlock(blockId, checked) {
-  const blocks =
-    props.page?.blocks.map((block) =>
-      block.id === blockId
-        ? {
-            ...block,
-            checked,
-          }
-        : block,
-    ) || [];
+  const blocks = toggleBlockChecked(props.page?.blocks || [], blockId, checked);
 
   emit("update-page", {
     blocks,
-    content: blocks.map((block) => block.text).join("\n\n"),
+    content: getContentFromBlocks(blocks),
   });
 }
 
 function changeBlockType(blockId, type, text = "") {
-  const blocks =
-    props.page?.blocks.map((block) =>
-      block.id === blockId
-        ? {
-            ...block,
-            type,
-            text,
-            checked: type === "todo" ? block.checked : false,
-          }
-        : block,
-    ) || [];
+  const blocks = changeBlocksType(props.page?.blocks || [], blockId, type, text);
 
   emit("update-page", {
     blocks,
-    content: blocks.map((block) => block.text).join("\n\n"),
+    content: getContentFromBlocks(blocks),
   });
 }
 
@@ -130,15 +103,11 @@ function getBlockShortcut(text) {
 }
 
 async function insertBlockAfter(blockId, type = "paragraph") {
-  const nextBlock = createBlock(type);
-  const blocks = [];
-
-  for (const block of props.page?.blocks || []) {
-    blocks.push(block);
-    if (block.id === blockId) {
-      blocks.push(nextBlock);
-    }
-  }
+  const { blocks, insertedBlockId } = insertBlockAfterId(
+    props.page?.blocks || [],
+    blockId,
+    type,
+  );
 
   emit("update-page", {
     blocks,
@@ -146,7 +115,7 @@ async function insertBlockAfter(blockId, type = "paragraph") {
   });
 
   await nextTick();
-  blockEditor.value?.focusBlock(nextBlock.id);
+  blockEditor.value?.focusBlock(insertedBlockId);
 }
 
 function parsePastedText(text) {
@@ -278,23 +247,57 @@ async function pasteBlocks(blockId, pasteDetail) {
 }
 
 async function deleteEmptyBlock(blockId) {
-  const currentBlocks = props.page?.blocks || [];
-
-  if (currentBlocks.length <= 1) {
-    return;
-  }
-
-  const blockIndex = currentBlocks.findIndex((block) => block.id === blockId);
-  const previousBlock = currentBlocks[Math.max(0, blockIndex - 1)];
-  const blocks = currentBlocks.filter((block) => block.id !== blockId);
+  const { blocks, focusBlockId } = deleteBlocksByIds(props.page?.blocks || [], [blockId]);
 
   emit("update-page", {
     blocks,
-    content: blocks.map((block) => block.text).join("\n\n"),
+    content: getContentFromBlocks(blocks),
   });
 
   await nextTick();
-  blockEditor.value?.focusBlock(previousBlock?.id || blocks[0]?.id);
+  blockEditor.value?.focusBlock(focusBlockId);
+}
+
+async function moveBlock(blockId, direction) {
+  const blocks = moveBlockById(props.page?.blocks || [], blockId, direction);
+
+  emit("update-page", {
+    blocks,
+    content: getContentFromBlocks(blocks),
+  });
+
+  await nextTick();
+  blockEditor.value?.focusBlock(blockId);
+}
+
+async function duplicateBlock(blockId) {
+  const { blocks, duplicatedBlockId } = duplicateBlockById(
+    props.page?.blocks || [],
+    blockId,
+  );
+
+  emit("update-page", {
+    blocks,
+    content: getContentFromBlocks(blocks),
+  });
+
+  await nextTick();
+  blockEditor.value?.focusBlock(duplicatedBlockId || blockId);
+}
+
+async function deleteBlocks(blockIds) {
+  const { blocks, focusBlockId } = deleteBlocksByIds(
+    props.page?.blocks || [],
+    blockIds,
+  );
+
+  emit("update-page", {
+    blocks,
+    content: getContentFromBlocks(blocks),
+  });
+
+  await nextTick();
+  blockEditor.value?.focusBlock(focusBlockId);
 }
 </script>
 
@@ -324,6 +327,9 @@ async function deleteEmptyBlock(blockId) {
         @insert-block-after="insertBlockAfter"
         @paste-blocks="pasteBlocks"
         @delete-empty-block="deleteEmptyBlock"
+        @move-block="moveBlock"
+        @duplicate-block="duplicateBlock"
+        @delete-blocks="deleteBlocks"
       />
     </div>
   </section>
