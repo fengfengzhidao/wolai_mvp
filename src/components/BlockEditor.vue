@@ -20,6 +20,9 @@ const emit = defineEmits([
   "delete-empty-block",
 ]);
 const blockInputs = ref([]);
+const focusedBlockId = ref(null);
+const isPointerSelecting = ref(false);
+const pointerStart = ref(null);
 const slashMenu = ref({
   isOpen: false,
   blockId: null,
@@ -58,6 +61,14 @@ const blockTypeOptions = [
     description: "可勾选任务",
   },
 ];
+
+function getBlockPlaceholder(blockId) {
+  if (focusedBlockId.value !== blockId || isPointerSelecting.value) {
+    return "";
+  }
+
+  return "输入内容，回车新建块";
+}
 
 async function focusBlock(blockId) {
   await nextTick();
@@ -138,6 +149,39 @@ function closeSlashMenu() {
   slashMenu.value.isOpen = false;
 }
 
+function handleEditorPointerDown(event) {
+  if (event.button !== 0) {
+    return;
+  }
+
+  pointerStart.value = {
+    x: event.clientX,
+    y: event.clientY,
+  };
+  isPointerSelecting.value = false;
+}
+
+function handleDocumentPointerMove(event) {
+  if (!pointerStart.value) {
+    return;
+  }
+
+  const deltaX = Math.abs(event.clientX - pointerStart.value.x);
+  const deltaY = Math.abs(event.clientY - pointerStart.value.y);
+
+  if (deltaX > 4 || deltaY > 4) {
+    isPointerSelecting.value = true;
+  }
+}
+
+function handleDocumentPointerUp() {
+  pointerStart.value = null;
+
+  window.setTimeout(() => {
+    isPointerSelecting.value = window.getSelection()?.toString().length > 0;
+  }, 0);
+}
+
 function handleDocumentPointerDown(event) {
   if (!slashMenu.value.isOpen) {
     return;
@@ -176,15 +220,23 @@ defineExpose({
 
 onMounted(() => {
   document.addEventListener("pointerdown", handleDocumentPointerDown);
+  document.addEventListener("pointermove", handleDocumentPointerMove);
+  document.addEventListener("pointerup", handleDocumentPointerUp);
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener("pointerdown", handleDocumentPointerDown);
+  document.removeEventListener("pointermove", handleDocumentPointerMove);
+  document.removeEventListener("pointerup", handleDocumentPointerUp);
 });
 </script>
 
 <template>
-  <div class="block-editor" aria-label="块编辑区">
+  <div
+    class="block-editor"
+    aria-label="块编辑区"
+    @pointerdown="handleEditorPointerDown"
+  >
     <div v-for="block in blocks" :key="block.id" class="block-shell">
       <div class="block-row" :class="`is-${block.type}`">
         <span v-if="block.type === 'bullet'" class="block-marker">•</span>
@@ -205,8 +257,10 @@ onBeforeUnmount(() => {
           :class="`is-${block.type}`"
           type="text"
           :value="block.text"
-          placeholder="输入内容，回车新建块"
+          :placeholder="getBlockPlaceholder(block.id)"
           :disabled="disabled"
+          @focus="focusedBlockId = block.id"
+          @blur="focusedBlockId = null"
           @input="handleInput($event, block.id)"
           @keydown="handleKeydown($event, block.id)"
         />
