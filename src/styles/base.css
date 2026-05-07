@@ -355,6 +355,12 @@ textarea {
   font-size: 12px;
 }
 
+.slash-menu-empty {
+  padding: 10px 9px;
+  color: #8c8c8c;
+  font-size: 13px;
+}
+
 @media (max-width: 760px) {
   .app-shell {
     grid-template-columns: 1fr;

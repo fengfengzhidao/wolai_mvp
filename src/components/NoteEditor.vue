@@ -74,14 +74,14 @@ function toggleBlock(blockId, checked) {
   });
 }
 
-function changeBlockType(blockId, type) {
+function changeBlockType(blockId, type, text = "") {
   const blocks =
     props.page?.blocks.map((block) =>
       block.id === blockId
         ? {
             ...block,
             type,
-            text: "",
+            text,
             checked: type === "todo" ? block.checked : false,
           }
         : block,
@@ -115,11 +115,12 @@ function getBlockShortcut(text) {
   };
 }
 
-async function insertBlockAfter(blockId) {
+async function insertBlockAfter(blockId, type = "paragraph") {
   const nextBlock = {
     id: crypto.randomUUID(),
-    type: "paragraph",
+    type,
     text: "",
+    checked: false,
   };
   const blocks = [];
 

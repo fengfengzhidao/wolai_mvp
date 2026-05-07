@@ -1,7 +1,7 @@
 <script setup>
-import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 
-defineProps({
+const props = defineProps({
   blocks: {
     type: Array,
     required: true,
@@ -27,6 +27,7 @@ const slashMenu = ref({
   isOpen: false,
   blockId: null,
   selectedIndex: 0,
+  query: "",
 });
 
 const blockTypeOptions = [
@@ -34,40 +35,98 @@ const blockTypeOptions = [
     type: "paragraph",
     label: "正文",
     description: "普通文本块",
+    keywords: ["text", "p"],
   },
   {
     type: "heading1",
     label: "一级标题",
     description: "大标题",
+    keywords: ["h1", "title", "biaoti"],
   },
   {
     type: "heading2",
     label: "二级标题",
     description: "小标题",
+    keywords: ["h2", "subtitle", "biaoti"],
   },
   {
     type: "bullet",
     label: "无序列表",
     description: "项目符号列表",
+    keywords: ["ul", "list", "bullet"],
   },
   {
     type: "numbered",
     label: "有序列表",
     description: "编号列表",
+    keywords: ["ol", "list", "number"],
   },
   {
     type: "todo",
     label: "待办",
     description: "可勾选任务",
+    keywords: ["task", "check", "todo"],
   },
 ];
 
-function getBlockPlaceholder(blockId) {
-  if (focusedBlockId.value !== blockId || isPointerSelecting.value) {
+const listBlockTypes = ["bullet", "numbered"];
+
+const filteredBlockTypeOptions = computed(() => {
+  const query = slashMenu.value.query.trim().toLowerCase();
+
+  if (!query) {
+    return blockTypeOptions;
+  }
+
+  return blockTypeOptions.filter((option) => {
+    const searchableText = [
+      option.type,
+      option.label,
+      option.description,
+      ...option.keywords,
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return searchableText.includes(query);
+  });
+});
+
+function getBlockPlaceholder(block) {
+  const placeholders = {
+    paragraph: "输入内容，回车新建块",
+    heading1: "标题",
+    heading2: "小标题",
+    bullet: "列表项",
+    numbered: "列表项",
+    todo: "待办事项",
+  };
+
+  if (focusedBlockId.value !== block.id || isPointerSelecting.value) {
     return "";
   }
 
-  return "输入内容，回车新建块";
+  return placeholders[block.type] || placeholders.paragraph;
+}
+
+function getNumberedIndex(blockId) {
+  const blockIndex = props.blocks.findIndex((block) => block.id === blockId);
+
+  if (blockIndex === -1) {
+    return 1;
+  }
+
+  let numberedIndex = 1;
+
+  for (let index = blockIndex - 1; index >= 0; index -= 1) {
+    if (props.blocks[index].type !== "numbered") {
+      break;
+    }
+
+    numberedIndex += 1;
+  }
+
+  return numberedIndex;
 }
 
 async function focusBlock(blockId) {
@@ -89,8 +148,8 @@ function handleInput(event, blockId) {
   const value = event.target.value;
   emit("update-block", blockId, value);
 
-  if (value === "/") {
-    openSlashMenu(blockId);
+  if (value.startsWith("/")) {
+    openSlashMenu(blockId, value.slice(1));
     return;
   }
 
@@ -100,10 +159,12 @@ function handleInput(event, blockId) {
 }
 
 function handleKeydown(event, blockId) {
+  const block = props.blocks.find((item) => item.id === blockId);
+
   if (!slashMenu.value.isOpen || slashMenu.value.blockId !== blockId) {
     if (event.key === "Enter") {
       event.preventDefault();
-      emit("insert-block-after", blockId);
+      handleEnter(block);
     }
 
     if (event.key === "Backspace") {
@@ -115,20 +176,31 @@ function handleKeydown(event, blockId) {
 
   if (event.key === "ArrowDown") {
     event.preventDefault();
+    if (filteredBlockTypeOptions.value.length === 0) {
+      return;
+    }
+
     slashMenu.value.selectedIndex =
-      (slashMenu.value.selectedIndex + 1) % blockTypeOptions.length;
+      (slashMenu.value.selectedIndex + 1) % filteredBlockTypeOptions.value.length;
   }
 
   if (event.key === "ArrowUp") {
     event.preventDefault();
+    if (filteredBlockTypeOptions.value.length === 0) {
+      return;
+    }
+
     slashMenu.value.selectedIndex =
-      (slashMenu.value.selectedIndex - 1 + blockTypeOptions.length) %
-      blockTypeOptions.length;
+      (slashMenu.value.selectedIndex - 1 + filteredBlockTypeOptions.value.length) %
+      filteredBlockTypeOptions.value.length;
   }
 
   if (event.key === "Enter") {
     event.preventDefault();
-    selectBlockType(blockTypeOptions[slashMenu.value.selectedIndex].type);
+    const selectedOption = filteredBlockTypeOptions.value[slashMenu.value.selectedIndex];
+    if (selectedOption) {
+      selectBlockType(selectedOption.type);
+    }
   }
 
   if (event.key === "Escape") {
@@ -137,16 +209,36 @@ function handleKeydown(event, blockId) {
   }
 }
 
-function openSlashMenu(blockId) {
+function handleEnter(block) {
+  if (!block) {
+    return;
+  }
+
+  if (listBlockTypes.includes(block.type)) {
+    if (block.text.trim() === "") {
+      emit("change-block-type", block.id, "paragraph");
+      return;
+    }
+
+    emit("insert-block-after", block.id, block.type);
+    return;
+  }
+
+  emit("insert-block-after", block.id);
+}
+
+function openSlashMenu(blockId, query = "") {
   slashMenu.value = {
     isOpen: true,
     blockId,
     selectedIndex: 0,
+    query,
   };
 }
 
 function closeSlashMenu() {
   slashMenu.value.isOpen = false;
+  slashMenu.value.query = "";
 }
 
 function handleEditorPointerDown(event) {
@@ -240,7 +332,9 @@ onBeforeUnmount(() => {
     <div v-for="block in blocks" :key="block.id" class="block-shell">
       <div class="block-row" :class="`is-${block.type}`">
         <span v-if="block.type === 'bullet'" class="block-marker">•</span>
-        <span v-else-if="block.type === 'numbered'" class="block-marker">1.</span>
+        <span v-else-if="block.type === 'numbered'" class="block-marker">
+          {{ getNumberedIndex(block.id) }}.
+        </span>
         <input
           v-else-if="block.type === 'todo'"
           class="todo-checkbox"
@@ -257,7 +351,7 @@ onBeforeUnmount(() => {
           :class="`is-${block.type}`"
           type="text"
           :value="block.text"
-          :placeholder="getBlockPlaceholder(block.id)"
+          :placeholder="getBlockPlaceholder(block)"
           :disabled="disabled"
           @focus="focusedBlockId = block.id"
           @blur="focusedBlockId = null"
@@ -271,7 +365,7 @@ onBeforeUnmount(() => {
         @mousedown.prevent
       >
         <button
-          v-for="(option, index) in blockTypeOptions"
+          v-for="(option, index) in filteredBlockTypeOptions"
           :key="option.type"
           class="slash-menu-item"
           :class="{ 'is-selected': index === slashMenu.selectedIndex }"
@@ -282,6 +376,9 @@ onBeforeUnmount(() => {
           <span class="slash-menu-label">{{ option.label }}</span>
           <span class="slash-menu-description">{{ option.description }}</span>
         </button>
+        <div v-if="filteredBlockTypeOptions.length === 0" class="slash-menu-empty">
+          没有匹配的块类型
+        </div>
       </div>
     </div>
   </div>
