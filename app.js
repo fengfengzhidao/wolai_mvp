@@ -9,6 +9,7 @@ const ACTIVE_PAGE_KEY = "wolai_mvp_active_page";
 
 let pages = loadPages();
 let activePageId = localStorage.getItem(ACTIVE_PAGE_KEY) || pages[0]?.id || null;
+let saveTimer = null;
 
 if (pages.length === 0) {
   const starterPage = createPage("欢迎使用 wolai_mvp", "这是你的第一篇笔记。");
@@ -43,6 +44,17 @@ function persistPages() {
   if (activePageId) {
     localStorage.setItem(ACTIVE_PAGE_KEY, activePageId);
   }
+}
+
+function queueSave() {
+  saveStatus.textContent = "保存中";
+  window.clearTimeout(saveTimer);
+
+  saveTimer = window.setTimeout(() => {
+    persistPages();
+    saveStatus.textContent = "已保存";
+    renderPageList();
+  }, 350);
 }
 
 function getActivePage() {
@@ -105,6 +117,22 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function updateActivePage(changes) {
+  pages = pages.map((page) => {
+    if (page.id !== activePageId) {
+      return page;
+    }
+
+    return {
+      ...page,
+      ...changes,
+      updatedAt: Date.now(),
+    };
+  });
+
+  queueSave();
+}
+
 newPageButton.addEventListener("click", () => {
   const newPage = createPage();
   pages = [newPage, ...pages];
@@ -114,6 +142,18 @@ newPageButton.addEventListener("click", () => {
   renderEditor();
   titleInput.focus();
   titleInput.select();
+});
+
+titleInput.addEventListener("input", () => {
+  updateActivePage({
+    title: titleInput.value,
+  });
+});
+
+contentInput.addEventListener("input", () => {
+  updateActivePage({
+    content: contentInput.value,
+  });
 });
 
 pageListEl.addEventListener("click", (event) => {
