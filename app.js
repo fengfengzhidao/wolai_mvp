@@ -50,11 +50,76 @@ function getActivePage() {
 }
 
 function renderPageList() {
-  pageListEl.innerHTML = "";
+  const sortedPages = [...pages].sort((a, b) => b.updatedAt - a.updatedAt);
+
+  pageListEl.innerHTML = sortedPages
+    .map((page) => {
+      const title = escapeHtml(page.title.trim() || "未命名页面");
+      const activeClass = page.id === activePageId ? " is-active" : "";
+
+      return `
+        <button class="page-list-item${activeClass}" type="button" data-page-id="${page.id}">
+          <span class="page-title">${title}</span>
+          <span class="page-time">${formatTime(page.updatedAt)}</span>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function renderEditor() {
+  const activePage = getActivePage();
+
+  if (!activePage) {
+    titleInput.value = "";
+    contentInput.value = "";
+    titleInput.disabled = true;
+    contentInput.disabled = true;
+    return;
+  }
+
+  activePageId = activePage.id;
+  titleInput.disabled = false;
+  contentInput.disabled = false;
+  titleInput.value = activePage.title;
+  contentInput.value = activePage.content;
+  saveStatus.textContent = "已保存";
+  persistPages();
+}
+
+function formatTime(timestamp) {
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(timestamp);
+}
+
+function escapeHtml(value) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 newPageButton.addEventListener("click", () => {
   saveStatus.textContent = "已准备";
 });
 
+pageListEl.addEventListener("click", (event) => {
+  const pageButton = event.target.closest("[data-page-id]");
+
+  if (!pageButton) {
+    return;
+  }
+
+  activePageId = pageButton.dataset.pageId;
+  renderPageList();
+  renderEditor();
+});
+
 renderPageList();
+renderEditor();

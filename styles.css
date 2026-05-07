@@ -85,6 +85,48 @@ textarea {
   gap: 4px;
 }
 
+.page-list-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  width: 100%;
+  min-height: 54px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  color: #d2d2d2;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.page-list-item:hover {
+  background: #2a2a2a;
+}
+
+.page-list-item.is-active {
+  color: #ffffff;
+  background: #3d2527;
+}
+
+.page-title {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.page-time {
+  color: #8c8c8c;
+  font-size: 12px;
+}
+
+.page-list-item.is-active .page-time {
+  color: #c49a9d;
+}
+
 .editor-pane {
   min-width: 0;
   background: #181818;
