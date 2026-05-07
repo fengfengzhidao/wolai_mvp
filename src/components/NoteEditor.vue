@@ -16,6 +16,7 @@ const props = defineProps({
 
 const emit = defineEmits(["update-page"]);
 const titleInput = ref(null);
+const blockEditor = ref(null);
 
 const title = computed({
   get() {
@@ -53,6 +54,30 @@ function updateBlock(blockId, text) {
     content: blocks.map((block) => block.text).join("\n\n"),
   });
 }
+
+async function insertBlockAfter(blockId) {
+  const nextBlock = {
+    id: crypto.randomUUID(),
+    type: "paragraph",
+    text: "",
+  };
+  const blocks = [];
+
+  for (const block of props.page?.blocks || []) {
+    blocks.push(block);
+    if (block.id === blockId) {
+      blocks.push(nextBlock);
+    }
+  }
+
+  emit("update-page", {
+    blocks,
+    content: blocks.map((block) => block.text).join("\n\n"),
+  });
+
+  await nextTick();
+  blockEditor.value?.focusBlock(nextBlock.id);
+}
 </script>
 
 <template>
@@ -72,9 +97,11 @@ function updateBlock(blockId, text) {
         :disabled="!page"
       />
       <BlockEditor
+        ref="blockEditor"
         :blocks="page?.blocks || []"
         :disabled="!page"
         @update-block="updateBlock"
+        @insert-block-after="insertBlockAfter"
       />
     </div>
   </section>
