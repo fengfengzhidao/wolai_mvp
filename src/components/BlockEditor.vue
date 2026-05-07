@@ -194,6 +194,7 @@ async function focusBlock(blockId) {
 }
 
 async function focusBlockAt(blockId, position = "start") {
+  focusedBlockId.value = blockId;
   await nextTick();
   const input = blockInputs.value.find(
     (item) => item?.dataset?.blockId === blockId || item?.$el?.dataset?.blockId === blockId,
@@ -208,6 +209,73 @@ async function focusBlockAt(blockId, position = "start") {
     const cursorPosition = position === "end" ? input.value.length : 0;
     input.setSelectionRange(cursorPosition, cursorPosition);
   }
+}
+
+function hasMarkdownPreview(block) {
+  return block.type !== "code" && parseMarkdownPreview(block.text).some(
+    (token) => token.type !== "text",
+  );
+}
+
+function parseMarkdownPreview(text) {
+  const sourceText = typeof text === "string" ? text : "";
+  const tokens = [];
+  const markdownPattern = /!\[([^\]]*)\]\(([^)\s]+)\)|\[([^\]]+)\]\(([^)\s]+)\)/g;
+  let cursor = 0;
+  let match = markdownPattern.exec(sourceText);
+
+  while (match) {
+    if (match.index > cursor) {
+      tokens.push({
+        type: "text",
+        value: sourceText.slice(cursor, match.index),
+      });
+    }
+
+    if (match[1] !== undefined) {
+      tokens.push({
+        type: "image",
+        alt: match[1],
+        url: sanitizeMarkdownUrl(match[2]),
+      });
+    } else {
+      tokens.push({
+        type: "link",
+        label: match[3],
+        url: sanitizeMarkdownUrl(match[4]),
+      });
+    }
+
+    cursor = markdownPattern.lastIndex;
+    match = markdownPattern.exec(sourceText);
+  }
+
+  if (cursor < sourceText.length) {
+    tokens.push({
+      type: "text",
+      value: sourceText.slice(cursor),
+    });
+  }
+
+  return tokens;
+}
+
+function sanitizeMarkdownUrl(url) {
+  const trimmedUrl = String(url || "").trim();
+
+  if (/^javascript:/i.test(trimmedUrl)) {
+    return "";
+  }
+
+  return trimmedUrl;
+}
+
+function focusPreviewBlock(event, blockId) {
+  if (event.target.closest("a")) {
+    return;
+  }
+
+  focusBlockAt(blockId, "end");
 }
 
 function updateCodeBlock(blockId, text) {
@@ -749,6 +817,7 @@ watch(
         />
         <textarea
           v-if="block.type !== 'code'"
+          v-show="focusedBlockId === block.id || !hasMarkdownPreview(block)"
           ref="blockInputs"
           :data-block-id="block.id"
           class="text-block"
@@ -763,6 +832,37 @@ watch(
           @keydown="handleKeydown($event, block.id)"
           @paste="handlePaste($event, block.id)"
         />
+        <div
+          v-if="block.type !== 'code' && focusedBlockId !== block.id && hasMarkdownPreview(block)"
+          class="markdown-block-preview"
+          :class="`is-${block.type}`"
+          role="button"
+          tabindex="0"
+          @click="focusPreviewBlock($event, block.id)"
+          @keydown.enter.prevent="focusBlockAt(block.id, 'end')"
+        >
+          <template
+            v-for="(token, tokenIndex) in parseMarkdownPreview(block.text)"
+            :key="`${block.id}-${tokenIndex}`"
+          >
+            <span v-if="token.type === 'text'">{{ token.value }}</span>
+            <a
+              v-else-if="token.type === 'link' && token.url"
+              class="markdown-preview-link"
+              :href="token.url"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {{ token.label }}
+            </a>
+            <img
+              v-else-if="token.type === 'image' && token.url"
+              class="markdown-preview-image"
+              :src="token.url"
+              :alt="token.alt"
+            />
+          </template>
+        </div>
         <CodeBlock
           v-else
           ref="blockInputs"

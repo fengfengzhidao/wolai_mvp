@@ -397,6 +397,58 @@ textarea {
   line-height: 1.4;
 }
 
+.markdown-block-preview {
+  min-height: 34px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #f3f3f3;
+  font-size: 17px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  cursor: text;
+}
+
+.markdown-block-preview:hover {
+  background: #202020;
+}
+
+.markdown-block-preview:focus {
+  outline: 0;
+  background: #202020;
+  box-shadow: inset 2px 0 0 #8a4f55;
+}
+
+.markdown-block-preview.is-heading1 {
+  min-height: 46px;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.markdown-block-preview.is-heading2 {
+  min-height: 40px;
+  font-size: 24px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.markdown-preview-link {
+  color: #6bb2ff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.markdown-preview-image {
+  display: block;
+  max-width: 100%;
+  max-height: 360px;
+  margin: 8px 0;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
 .code-block-shell {
   position: relative;
   overflow: visible;
