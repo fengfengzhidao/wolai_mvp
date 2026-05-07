@@ -224,8 +224,15 @@ textarea {
   line-height: 1.18;
 }
 
-.title-input::placeholder,
+.title-input::placeholder {
+  color: #676767;
+}
+
 .text-block::placeholder {
+  color: transparent;
+}
+
+.text-block:focus::placeholder {
   color: #676767;
 }
 
