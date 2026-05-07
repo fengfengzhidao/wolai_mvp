@@ -5,12 +5,12 @@
 第一版只验证：
 
 - 创建页面
-- 输入标题和 Markdown 正文
+- 输入标题和正文
 - 保存内容
 - 从页面列表再次打开
 - 继续编辑
 
-当前版本采用 Vue 3 + Vite 实现，正文编辑使用 TOAST UI Editor，数据保存在浏览器 `localStorage` 中。
+当前版本采用 Vue 3 + Vite 实现，数据保存在浏览器 `localStorage` 中。
 
 ## 开发命令
 
