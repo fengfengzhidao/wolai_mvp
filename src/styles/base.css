@@ -230,6 +230,10 @@ textarea {
   margin-top: 28px;
 }
 
+.block-shell {
+  position: relative;
+}
+
 .block-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -292,6 +296,50 @@ textarea {
 .block-row.is-todo:has(.todo-checkbox:checked) .text-block {
   color: #8f8f8f;
   text-decoration: line-through;
+}
+
+.slash-menu {
+  position: absolute;
+  z-index: 15;
+  top: calc(100% + 4px);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  width: 240px;
+  padding: 6px;
+  border: 1px solid #3c3c3c;
+  border-radius: 8px;
+  background: #262626;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
+}
+
+.slash-menu-item {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-height: 46px;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 6px;
+  color: #eeeeee;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.slash-menu-item:hover,
+.slash-menu-item.is-selected {
+  background: #343434;
+}
+
+.slash-menu-label {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.slash-menu-description {
+  color: #999999;
+  font-size: 12px;
 }
 
 @media (max-width: 760px) {

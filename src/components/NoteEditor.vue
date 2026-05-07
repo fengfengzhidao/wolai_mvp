@@ -74,6 +74,25 @@ function toggleBlock(blockId, checked) {
   });
 }
 
+function changeBlockType(blockId, type) {
+  const blocks =
+    props.page?.blocks.map((block) =>
+      block.id === blockId
+        ? {
+            ...block,
+            type,
+            text: "",
+            checked: type === "todo" ? block.checked : false,
+          }
+        : block,
+    ) || [];
+
+  emit("update-page", {
+    blocks,
+    content: blocks.map((block) => block.text).join("\n\n"),
+  });
+}
+
 function getBlockShortcut(text) {
   const shortcuts = [
     { marker: "# ", type: "heading1" },
@@ -163,6 +182,7 @@ async function deleteEmptyBlock(blockId) {
         :disabled="!page"
         @update-block="updateBlock"
         @toggle-block="toggleBlock"
+        @change-block-type="changeBlockType"
         @insert-block-after="insertBlockAfter"
         @delete-empty-block="deleteEmptyBlock"
       />
