@@ -124,12 +124,10 @@ textarea {
 
 .page-list-item {
   position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 4px;
+  display: block;
   width: 100%;
-  min-height: 54px;
-  padding: 8px 10px;
+  min-height: 34px;
+  padding: 6px 8px;
   border: 0;
   border-radius: 6px;
   color: #d2d2d2;
@@ -174,19 +172,10 @@ textarea {
 .page-title {
   overflow: hidden;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.page-time {
-  color: #8c8c8c;
-  font-size: 12px;
-}
-
-.page-list-item.is-active .page-time {
-  color: #c49a9d;
 }
 
 .context-menu {
@@ -251,8 +240,7 @@ textarea {
 }
 
 .page-expand-button,
-.page-expand-spacer,
-.page-icon-spacer {
+.page-expand-spacer {
   width: 18px;
   height: 20px;
 }
@@ -273,6 +261,31 @@ textarea {
 .page-expand-button:hover {
   color: #f0f0f0;
   background: #343434;
+}
+
+.default-page-icon {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 3px;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #7c7c7c;
+  border-radius: 4px;
+  color: #8e8e8e;
+}
+
+.default-page-icon-line {
+  width: 8px;
+  height: 1px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.default-page-icon-line.is-short {
+  width: 5px;
+  justify-self: start;
+  margin-left: 5px;
 }
 
 .context-menu-item:hover {
