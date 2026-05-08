@@ -573,14 +573,28 @@ function deleteSelectedBlocks() {
   clearBlockSelection();
 }
 
+function isTextSelectionTarget(target) {
+  return Boolean(
+    target instanceof Element &&
+      target.closest("input, textarea, .cm-editor, .markdown-block-preview"),
+  );
+}
+
 function handleEditorPointerDown(event) {
   if (event.button !== 0) {
     return;
   }
 
-  pointerStartedInEditable.value = Boolean(
-    event.target.closest("input, textarea"),
-  );
+  pointerStartedInEditable.value = isTextSelectionTarget(event.target);
+
+  if (pointerStartedInEditable.value) {
+    pointerStart.value = null;
+    pointerCurrent.value = null;
+    selectionStartPoint.value = null;
+    isPointerSelecting.value = false;
+    return;
+  }
+
   pointerStart.value = {
     x: event.clientX,
     y: event.clientY,
@@ -591,7 +605,7 @@ function handleEditorPointerDown(event) {
 }
 
 function handleDocumentPointerMove(event) {
-  if (!pointerStart.value) {
+  if (!pointerStart.value || pointerStartedInEditable.value) {
     return;
   }
 
@@ -609,6 +623,7 @@ function handleDocumentPointerMove(event) {
 
 function handleDocumentPointerUp(event) {
   const startPoint = selectionStartPoint.value;
+  const startedInTextSelection = pointerStartedInEditable.value;
   const endPoint = {
     x: event.clientX,
     y: event.clientY,
@@ -618,7 +633,7 @@ function handleDocumentPointerUp(event) {
     (Math.abs(endPoint.x - startPoint.x) > 2 ||
       Math.abs(endPoint.y - startPoint.y) > 2);
   const shouldSelectBlocks =
-    movedFarEnough && startPoint && !didDropBlock.value;
+    movedFarEnough && startPoint && !didDropBlock.value && !pointerStartedInEditable.value;
 
   pointerCurrent.value = endPoint;
   pointerStart.value = null;
@@ -632,7 +647,9 @@ function handleDocumentPointerUp(event) {
     pointerCurrent.value = null;
     pointerStartedInEditable.value = false;
     didDropBlock.value = false;
-    isPointerSelecting.value = window.getSelection()?.toString().length > 0;
+    isPointerSelecting.value = startedInTextSelection
+      ? false
+      : window.getSelection()?.toString().length > 0;
   }, 0);
 }
 
