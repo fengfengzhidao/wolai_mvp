@@ -248,7 +248,8 @@ function hasMarkdownPreview(block) {
 function parseMarkdownPreview(text) {
   const sourceText = typeof text === "string" ? text : "";
   const tokens = [];
-  const markdownPattern = /!\[([^\]]*)\]\(([^)\s]+)\)|\[([^\]]+)\]\(([^)\s]+)\)/g;
+  const markdownPattern =
+    /!\[([^\]]*)\]\(([^)\s]+)\)|\[([^\]]+)\]\(([^)\s]+)\)|`([^`\n]+)`|\*\*([^*\n]+)\*\*/g;
   let cursor = 0;
   let match = markdownPattern.exec(sourceText);
 
@@ -266,11 +267,21 @@ function parseMarkdownPreview(text) {
         alt: match[1],
         url: sanitizeMarkdownUrl(match[2]),
       });
-    } else {
+    } else if (match[3] !== undefined) {
       tokens.push({
         type: "link",
         label: match[3],
         url: sanitizeMarkdownUrl(match[4]),
+      });
+    } else if (match[5] !== undefined) {
+      tokens.push({
+        type: "inlineCode",
+        value: match[5],
+      });
+    } else {
+      tokens.push({
+        type: "strong",
+        value: match[6],
       });
     }
 
@@ -890,6 +901,18 @@ watch(
             :key="`${block.id}-${tokenIndex}`"
           >
             <span v-if="token.type === 'text'">{{ token.value }}</span>
+            <code
+              v-else-if="token.type === 'inlineCode'"
+              class="markdown-preview-code"
+            >
+              {{ token.value }}
+            </code>
+            <strong
+              v-else-if="token.type === 'strong'"
+              class="markdown-preview-strong"
+            >
+              {{ token.value }}
+            </strong>
             <a
               v-else-if="token.type === 'link' && token.url"
               class="markdown-preview-link"

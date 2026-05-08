@@ -543,6 +543,21 @@ textarea {
   cursor: pointer;
 }
 
+.markdown-preview-code {
+  padding: 2px 5px;
+  border: 1px solid #383838;
+  border-radius: 4px;
+  color: #f0d28a;
+  background: #242424;
+  font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+  font-size: 0.9em;
+}
+
+.markdown-preview-strong {
+  color: #ffffff;
+  font-weight: 750;
+}
+
 .markdown-preview-image {
   display: block;
   max-width: 100%;
