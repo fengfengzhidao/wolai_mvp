@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import BlockEditor from "./BlockEditor.vue";
 import { formatTime } from "../utils/formatTime";
 import { normalizeCodeLanguage } from "../utils/codeLanguages";
@@ -41,6 +41,7 @@ const emit = defineEmits([
 ]);
 const titleInput = ref(null);
 const blockEditor = ref(null);
+const isPageMenuOpen = ref(false);
 
 const title = computed({
   get() {
@@ -69,6 +70,16 @@ const breadcrumbs = computed(() => {
   }
 
   return [{ id: null, title: "个人空间" }, ...path];
+});
+
+const pageStats = computed(() => {
+  const blocks = Array.isArray(props.page?.blocks) ? props.page.blocks : [];
+  const text = blocks.map((block) => block.text || "").join("");
+
+  return {
+    blockCount: blocks.length,
+    characterCount: Array.from(text.replace(/\s/g, "")).length,
+  };
 });
 
 watch(
@@ -107,6 +118,7 @@ function selectBreadcrumb(pageId) {
 
 function requestCreateChildPage() {
   if (props.page?.id) {
+    closePageMenu();
     emit("create-child-page", props.page.id);
   }
 }
@@ -116,6 +128,7 @@ function requestDeletePage() {
     return;
   }
 
+  closePageMenu();
   const confirmed = window.confirm("确定要删除当前页面吗？");
   if (confirmed) {
     emit("delete-page", props.page.id);
@@ -123,7 +136,24 @@ function requestDeletePage() {
 }
 
 function requestExportMarkdown() {
+  closePageMenu();
   exportPageAsMarkdown(props.page, props.pages);
+}
+
+function togglePageMenu() {
+  if (!props.page) {
+    return;
+  }
+
+  isPageMenuOpen.value = !isPageMenuOpen.value;
+
+  if (isPageMenuOpen.value) {
+    window.addEventListener("click", closePageMenu, { once: true });
+  }
+}
+
+function closePageMenu() {
+  isPageMenuOpen.value = false;
 }
 
 function changeBlockLanguage(blockId, language) {
@@ -429,6 +459,10 @@ async function deleteBlocks(blockIds) {
   await nextTick();
   blockEditor.value?.focusBlock(focusBlockId);
 }
+
+onBeforeUnmount(() => {
+  window.removeEventListener("click", closePageMenu);
+});
 </script>
 
 <template>
@@ -462,29 +496,48 @@ async function deleteBlocks(blockIds) {
           class="editor-action-button"
           type="button"
           :disabled="!page"
-          title="导出当前页面为 Markdown"
-          @click="requestExportMarkdown"
+          title="页面选项"
+          aria-label="页面选项"
+          @click.stop="togglePageMenu"
         >
-          MD
+          ...
         </button>
-        <button
-          class="editor-action-button"
-          type="button"
-          :disabled="!page"
-          title="新建子页面"
-          @click="requestCreateChildPage"
+        <div
+          v-if="isPageMenuOpen"
+          class="page-options-menu"
+          role="menu"
+          @click.stop
         >
-          ＋
-        </button>
-        <button
-          class="editor-action-button"
-          type="button"
-          :disabled="!page"
-          title="删除当前页面"
-          @click="requestDeletePage"
-        >
-          ×
-        </button>
+          <div class="page-options-tabs" aria-hidden="true">
+            <span class="page-options-tab is-active">页面选项</span>
+            <span class="page-options-tab">自定义页面</span>
+          </div>
+          <div class="page-options-section">
+            <button class="page-options-item" type="button" role="menuitem" @click="requestCreateChildPage">
+              <span class="page-options-icon">＋</span>
+              <span>新建子页面</span>
+            </button>
+            <button class="page-options-item" type="button" role="menuitem" @click="requestExportMarkdown">
+              <span class="page-options-icon">⇩</span>
+              <span>导出 Markdown</span>
+            </button>
+            <button
+              class="page-options-item is-danger"
+              type="button"
+              role="menuitem"
+              @click="requestDeletePage"
+            >
+              <span class="page-options-icon">×</span>
+              <span>删除当前页面</span>
+            </button>
+          </div>
+          <div class="page-options-section is-muted">
+            <p>字数：{{ pageStats.characterCount }}</p>
+            <p>块个数：{{ pageStats.blockCount }}</p>
+            <p>创建时间：{{ page ? formatTime(page.createdAt) : "-" }}</p>
+            <p>更新时间：{{ page ? formatTime(page.updatedAt) : "-" }}</p>
+          </div>
+        </div>
       </div>
     </header>
     <div class="editor-inner">
