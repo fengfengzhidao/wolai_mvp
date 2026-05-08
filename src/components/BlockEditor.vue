@@ -749,16 +749,18 @@ function serializeSelectedBlocksForClipboard() {
     .join("\n");
 }
 
-async function copySelectedBlocks(event) {
+function writeSelectedBlocksToClipboard(event) {
   if (selectedBlockIds.value.length === 0) {
-    return;
+    return false;
   }
 
-  const target = event.target;
-  if (
-    target instanceof HTMLElement &&
-    target.closest("input, textarea, .cm-editor, .block-action-menu, .image-action-menu, .slash-menu")
-  ) {
+  event.preventDefault();
+  event.clipboardData?.setData("text/plain", serializeSelectedBlocksForClipboard());
+  return true;
+}
+
+async function copySelectedBlocks(event) {
+  if (selectedBlockIds.value.length === 0) {
     return;
   }
 
@@ -964,6 +966,10 @@ function handleDocumentKeydown(event) {
   deleteSelectedBlocks();
 }
 
+function handleDocumentCopy(event) {
+  writeSelectedBlocksToClipboard(event);
+}
+
 function handleDocumentPointerDown(event) {
   const target = event.target;
   if (!(target instanceof Element)) {
@@ -1042,6 +1048,7 @@ onMounted(() => {
   document.addEventListener("pointermove", handleDocumentPointerMove);
   document.addEventListener("pointerup", handleDocumentPointerUp);
   document.addEventListener("keydown", handleDocumentKeydown);
+  document.addEventListener("copy", handleDocumentCopy);
 });
 
 onBeforeUnmount(() => {
@@ -1049,6 +1056,7 @@ onBeforeUnmount(() => {
   document.removeEventListener("pointermove", handleDocumentPointerMove);
   document.removeEventListener("pointerup", handleDocumentPointerUp);
   document.removeEventListener("keydown", handleDocumentKeydown);
+  document.removeEventListener("copy", handleDocumentCopy);
 });
 
 watch(
