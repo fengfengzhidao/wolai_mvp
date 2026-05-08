@@ -21,13 +21,22 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  pages: {
+    type: Array,
+    default: () => [],
+  },
   saveStatus: {
     type: String,
     required: true,
   },
 });
 
-const emit = defineEmits(["update-page"]);
+const emit = defineEmits([
+  "update-page",
+  "select-page",
+  "create-child-page",
+  "delete-page",
+]);
 const titleInput = ref(null);
 const blockEditor = ref(null);
 
@@ -38,6 +47,26 @@ const title = computed({
   set(value) {
     emit("update-page", { title: value });
   },
+});
+
+const breadcrumbs = computed(() => {
+  if (!props.page) {
+    return [{ id: null, title: "个人空间" }];
+  }
+
+  const pageById = new Map(props.pages.map((page) => [page.id, page]));
+  const path = [];
+  let currentPage = props.page;
+
+  while (currentPage) {
+    path.unshift({
+      id: currentPage.id,
+      title: getPageTitle(currentPage),
+    });
+    currentPage = currentPage.parentId ? pageById.get(currentPage.parentId) : null;
+  }
+
+  return [{ id: null, title: "个人空间" }, ...path];
 });
 
 watch(
@@ -62,6 +91,33 @@ function updateBlock(blockId, text) {
     blocks,
     content: getContentFromBlocks(blocks),
   });
+}
+
+function getPageTitle(page) {
+  return page?.title?.trim() || "未命名页面";
+}
+
+function selectBreadcrumb(pageId) {
+  if (pageId && pageId !== props.page?.id) {
+    emit("select-page", pageId);
+  }
+}
+
+function requestCreateChildPage() {
+  if (props.page?.id) {
+    emit("create-child-page", props.page.id);
+  }
+}
+
+function requestDeletePage() {
+  if (!props.page?.id) {
+    return;
+  }
+
+  const confirmed = window.confirm("确定要删除当前页面吗？");
+  if (confirmed) {
+    emit("delete-page", props.page.id);
+  }
 }
 
 function changeBlockLanguage(blockId, language) {
@@ -332,10 +388,54 @@ async function deleteBlocks(blockIds) {
 
 <template>
   <section class="editor-pane" aria-label="页面编辑区">
+    <header class="editor-topbar">
+      <nav class="editor-breadcrumbs" aria-label="页面路径">
+        <template
+          v-for="(crumb, index) in breadcrumbs"
+          :key="crumb.id || 'workspace'"
+        >
+          <button
+            class="editor-breadcrumb"
+            type="button"
+            :disabled="!crumb.id || crumb.id === page?.id"
+            @click="selectBreadcrumb(crumb.id)"
+          >
+            {{ crumb.title }}
+          </button>
+          <span
+            v-if="index < breadcrumbs.length - 1"
+            class="editor-breadcrumb-separator"
+            aria-hidden="true"
+          >
+            ›
+          </span>
+        </template>
+      </nav>
+      <div class="editor-actions" aria-label="页面操作">
+        <span class="editor-topbar-status">{{ saveStatus }}</span>
+        <button
+          class="editor-action-button"
+          type="button"
+          :disabled="!page"
+          title="新建子页面"
+          @click="requestCreateChildPage"
+        >
+          ＋
+        </button>
+        <button
+          class="editor-action-button"
+          type="button"
+          :disabled="!page"
+          title="删除当前页面"
+          @click="requestDeletePage"
+        >
+          ×
+        </button>
+      </div>
+    </header>
     <div class="editor-inner">
       <div class="editor-meta">
         <span>{{ page ? `更新于 ${formatTime(page.updatedAt)}` : "尚未保存" }}</span>
-        <span class="editor-status">{{ saveStatus }}</span>
       </div>
       <input
         ref="titleInput"

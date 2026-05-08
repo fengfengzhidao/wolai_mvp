@@ -29,8 +29,12 @@ const {
     />
     <NoteEditor
       :page="activePage"
+      :pages="sortedPages"
       :save-status="saveStatus"
       @update-page="updateActivePage"
+      @select-page="selectPage"
+      @create-child-page="createChildPage"
+      @delete-page="deletePage"
     />
   </main>
 </template>
