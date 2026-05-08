@@ -240,10 +240,12 @@ async function focusBlockAt(blockId, position = "start") {
     return;
   }
 
+  resizeBlockInput(input);
   input?.focus();
   if (input instanceof HTMLTextAreaElement) {
     const cursorPosition = position === "end" ? input.value.length : 0;
     input.setSelectionRange(cursorPosition, cursorPosition);
+    requestAnimationFrame(() => resizeBlockInput(input));
   }
 }
 
@@ -433,6 +435,12 @@ function resizeBlockInput(input) {
 
   input.style.height = "auto";
   input.style.height = `${input.scrollHeight}px`;
+}
+
+async function handleTextBlockFocus(event, blockId) {
+  focusedBlockId.value = blockId;
+  await nextTick();
+  resizeBlockInput(event.target);
 }
 
 async function resizeAllBlockInputs() {
@@ -999,7 +1007,7 @@ watch(
           :placeholder="getBlockPlaceholder(block)"
           :disabled="disabled"
           rows="1"
-          @focus="focusedBlockId = block.id"
+          @focus="handleTextBlockFocus($event, block.id)"
           @blur="focusedBlockId = null"
           @input="handleInput($event, block.id)"
           @keydown="handleKeydown($event, block.id)"
