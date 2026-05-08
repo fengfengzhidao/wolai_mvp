@@ -442,6 +442,35 @@ textarea {
   line-height: 1.4;
 }
 
+.text-block.is-heading3 {
+  min-height: 36px;
+  font-size: 21px;
+  font-weight: 720;
+  line-height: 1.45;
+}
+
+.text-block.is-heading4 {
+  min-height: 34px;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.text-block.is-heading5 {
+  min-height: 34px;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.text-block.is-heading6 {
+  min-height: 32px;
+  color: #cfcfcf;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
 .markdown-block-preview {
   min-height: 34px;
   padding: 2px 6px;
@@ -476,6 +505,35 @@ textarea {
   font-size: 24px;
   font-weight: 750;
   line-height: 1.4;
+}
+
+.markdown-block-preview.is-heading3 {
+  min-height: 36px;
+  font-size: 21px;
+  font-weight: 720;
+  line-height: 1.45;
+}
+
+.markdown-block-preview.is-heading4 {
+  min-height: 34px;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.markdown-block-preview.is-heading5 {
+  min-height: 34px;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.markdown-block-preview.is-heading6 {
+  min-height: 32px;
+  color: #cfcfcf;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.6;
 }
 
 .markdown-preview-link {

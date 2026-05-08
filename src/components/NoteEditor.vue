@@ -93,6 +93,10 @@ function changeBlockType(blockId, type, text = "") {
 
 function getBlockShortcut(text) {
   const shortcuts = [
+    { marker: "###### ", type: "heading6" },
+    { marker: "##### ", type: "heading5" },
+    { marker: "#### ", type: "heading4" },
+    { marker: "### ", type: "heading3" },
     { marker: "# ", type: "heading1" },
     { marker: "## ", type: "heading2" },
     { marker: "- ", type: "bullet" },
@@ -184,12 +188,9 @@ function parsePastedLine(line) {
     return null;
   }
 
-  if (trimmedLine.startsWith("## ")) {
-    return createBlock("heading2", trimmedLine.slice(3));
-  }
-
-  if (trimmedLine.startsWith("# ")) {
-    return createBlock("heading1", trimmedLine.slice(2));
+  const headingMatch = trimmedLine.match(/^(#{1,6})\s+(.*)$/);
+  if (headingMatch) {
+    return createBlock(`heading${headingMatch[1].length}`, headingMatch[2]);
   }
 
   if (trimmedLine.startsWith("- ")) {
