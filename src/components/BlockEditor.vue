@@ -186,12 +186,12 @@ const selectionBoxStyle = computed(() => {
 function getBlockPlaceholder(block) {
   const placeholders = {
     paragraph: "输入内容，回车新建块",
-    heading1: "标题",
-    heading2: "小标题",
-    heading3: "三级标题",
-    heading4: "四级标题",
-    heading5: "五级标题",
-    heading6: "六级标题",
+    heading1: "标题 1",
+    heading2: "标题 2",
+    heading3: "标题 3",
+    heading4: "标题 4",
+    heading5: "标题 5",
+    heading6: "标题 6",
     bullet: "列表项",
     numbered: "列表项",
     todo: "待办事项",
