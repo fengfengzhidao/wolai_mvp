@@ -243,14 +243,14 @@ const codeBlockTheme = EditorView.theme(
       backgroundColor: "transparent",
       color: "#eeeeee",
       fontSize: "16px",
-      minHeight: "156px",
+      minHeight: "auto",
     },
     ".cm-content": {
       caretColor: "#f4d6da",
       fontFamily:
         '"Cascadia Code", "Fira Code", Consolas, "Liberation Mono", monospace',
       lineHeight: "1.65",
-      padding: "34px 28px 28px",
+      padding: "34px 28px 24px",
     },
     ".cm-focused": {
       outline: "none",

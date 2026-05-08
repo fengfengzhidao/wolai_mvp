@@ -921,7 +921,7 @@ textarea {
 }
 
 .code-editor-root {
-  min-height: 156px;
+  min-height: 86px;
 }
 
 .code-block-shell:focus-within {
