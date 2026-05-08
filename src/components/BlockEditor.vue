@@ -1028,13 +1028,14 @@ function handleDocumentPointerDown(event) {
 
 async function selectBlockType(type) {
   const blockId = slashMenu.value.blockId;
+  const block = props.blocks.find((item) => item.id === blockId);
   closeSlashMenu();
 
   if (!blockId) {
     return;
   }
 
-  emit("change-block-type", blockId, type);
+  emit("change-block-type", blockId, type, block?.text?.startsWith("/") ? "" : undefined);
   await focusBlock(blockId);
 }
 

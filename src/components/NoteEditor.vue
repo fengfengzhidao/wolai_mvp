@@ -174,7 +174,7 @@ function toggleBlock(blockId, checked) {
   });
 }
 
-function changeBlockType(blockId, type, text = "") {
+function changeBlockType(blockId, type, text) {
   const blocks = changeBlocksType(props.page?.blocks || [], blockId, type, text);
 
   emit("update-page", {

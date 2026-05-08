@@ -140,13 +140,13 @@ export function deleteBlocks(blocks, blockIds) {
   };
 }
 
-export function changeBlockType(blocks, blockId, type, text = "") {
+export function changeBlockType(blocks, blockId, type, text) {
   return normalizeBlocksInput(blocks).map((block) =>
     block.id === blockId
       ? {
           ...block,
           type,
-          text,
+          text: typeof text === "string" ? text : block.text,
           checked: type === "todo" ? Boolean(block.checked) : false,
           language: type === "code" ? block.language || "plaintext" : undefined,
         }
