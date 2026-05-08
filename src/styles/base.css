@@ -600,6 +600,57 @@ textarea {
   font-size: 11px;
 }
 
+.title-calendar-icon-wrap {
+  position: relative;
+  display: inline-block;
+  width: max-content;
+}
+
+.title-calendar-icon-button {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.title-calendar-icon-button:hover .calendar-page-icon,
+.title-calendar-icon-button:focus-visible .calendar-page-icon {
+  filter: brightness(1.05);
+  outline: 2px solid rgba(213, 91, 107, 0.52);
+  outline-offset: 3px;
+}
+
+.calendar-date-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 18;
+  display: grid;
+  gap: 8px;
+  min-width: 210px;
+  padding: 12px;
+  border: 1px solid #3a3a3a;
+  border-radius: 7px;
+  background: #252525;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.42);
+}
+
+.calendar-date-label {
+  color: #a8a8a8;
+  font-size: 13px;
+}
+
+.calendar-date-input {
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid #444444;
+  border-radius: 5px;
+  color: #f0f0f0;
+  background: #1f1f1f;
+  font-size: 14px;
+}
+
 .title-input::placeholder {
   color: #676767;
 }

@@ -44,6 +44,7 @@ const emit = defineEmits([
 const titleInput = ref(null);
 const blockEditor = ref(null);
 const isPageMenuOpen = ref(false);
+const isCalendarPickerOpen = ref(false);
 
 const title = computed({
   get() {
@@ -87,6 +88,7 @@ const pageStats = computed(() => {
 watch(
   () => props.page?.id,
   async () => {
+    closeCalendarPicker();
     await nextTick();
     if (props.page?.title === "未命名页面") {
       titleInput.value?.focus();
@@ -144,6 +146,7 @@ function requestExportMarkdown() {
 
 function setTodayCalendarIcon() {
   closePageMenu();
+  closeCalendarPicker();
   emit("update-page-icon", {
     type: "calendar",
     date: getTodayDateString(),
@@ -153,6 +156,7 @@ function setTodayCalendarIcon() {
 
 function removePageIcon() {
   closePageMenu();
+  closeCalendarPicker();
   emit("update-page-icon", null);
 }
 
@@ -178,6 +182,36 @@ function togglePageMenu() {
 
 function closePageMenu() {
   isPageMenuOpen.value = false;
+}
+
+function toggleCalendarPicker() {
+  if (!props.page?.icon) {
+    return;
+  }
+
+  isCalendarPickerOpen.value = !isCalendarPickerOpen.value;
+
+  if (isCalendarPickerOpen.value) {
+    window.addEventListener("click", closeCalendarPicker, { once: true });
+  }
+}
+
+function closeCalendarPicker() {
+  isCalendarPickerOpen.value = false;
+}
+
+function changeCalendarDate(event) {
+  const date = event.target.value;
+
+  if (!date || !props.page?.icon) {
+    return;
+  }
+
+  emit("update-page-icon", {
+    ...props.page.icon,
+    date,
+  });
+  closeCalendarPicker();
 }
 
 function changeBlockLanguage(blockId, language) {
@@ -486,6 +520,7 @@ async function deleteBlocks(blockIds) {
 
 onBeforeUnmount(() => {
   window.removeEventListener("click", closePageMenu);
+  window.removeEventListener("click", closeCalendarPicker);
 });
 </script>
 
@@ -528,7 +563,7 @@ onBeforeUnmount(() => {
         </button>
         <div
           v-if="isPageMenuOpen"
-          class="page-options-menu"
+        class="page-options-menu"
           role="menu"
           @click.stop
         >
@@ -582,11 +617,32 @@ onBeforeUnmount(() => {
       <div class="editor-meta">
         <span>{{ page ? `更新于 ${formatTime(page.updatedAt)}` : "尚未保存" }}</span>
       </div>
-      <CalendarPageIcon
-        v-if="page?.icon?.type === 'calendar'"
-        :icon="page.icon"
-        size="large"
-      />
+      <div v-if="page?.icon?.type === 'calendar'" class="title-calendar-icon-wrap">
+        <button
+          class="title-calendar-icon-button"
+          type="button"
+          title="选择日期"
+          @click.stop="toggleCalendarPicker"
+        >
+          <CalendarPageIcon :icon="page.icon" size="large" />
+        </button>
+        <div
+          v-if="isCalendarPickerOpen"
+          class="calendar-date-popover"
+          @click.stop
+        >
+          <label class="calendar-date-label" for="page-calendar-date">
+            选择日期
+          </label>
+          <input
+            id="page-calendar-date"
+            class="calendar-date-input"
+            type="date"
+            :value="page.icon.date"
+            @change="changeCalendarDate"
+          />
+        </div>
+      </div>
       <input
         ref="titleInput"
         v-model="title"
