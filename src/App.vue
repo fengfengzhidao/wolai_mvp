@@ -11,6 +11,7 @@ const {
   createChildPage,
   selectPage,
   deletePage,
+  movePage,
   updateActivePage,
 } = useNotes();
 </script>
@@ -24,6 +25,7 @@ const {
       @create-child-page="createChildPage"
       @select-page="selectPage"
       @delete-page="deletePage"
+      @move-page="movePage"
     />
     <NoteEditor
       :page="activePage"

@@ -100,6 +100,10 @@ textarea {
   min-width: 0;
 }
 
+.page-tree-node.is-dragging {
+  opacity: 0.46;
+}
+
 .page-tree-children {
   display: flex;
   flex-direction: column;
@@ -119,6 +123,7 @@ textarea {
 }
 
 .page-list-item {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 4px;
@@ -131,6 +136,30 @@ textarea {
   background: transparent;
   text-align: left;
   cursor: pointer;
+}
+
+.page-list-item.is-drop-before::before,
+.page-list-item.is-drop-after::after {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  border-radius: 999px;
+  background: #d6a0a5;
+  content: "";
+}
+
+.page-list-item.is-drop-before::before {
+  top: -3px;
+}
+
+.page-list-item.is-drop-after::after {
+  bottom: -3px;
+}
+
+.page-list-item.is-drop-inside {
+  background: #3a3032;
+  box-shadow: inset 2px 0 0 #d6a0a5;
 }
 
 .page-list-item:hover {

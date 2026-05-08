@@ -15,28 +15,99 @@ const props = defineProps({
     type: Set,
     required: true,
   },
+  draggingPageId: {
+    type: String,
+    default: null,
+  },
+  dropTarget: {
+    type: Object,
+    default: null,
+  },
 });
 
-const emit = defineEmits(["select-page", "open-menu", "toggle-expanded"]);
+const emit = defineEmits([
+  "select-page",
+  "open-menu",
+  "toggle-expanded",
+  "page-drag-start",
+  "page-drag-over",
+  "page-drop",
+  "page-drag-end",
+]);
 
 const hasChildren = computed(() => props.page.children.length > 0);
 const isExpanded = computed(() => props.expandedPageIds.has(props.page.id));
+const dropPosition = computed(() =>
+  props.dropTarget?.pageId === props.page.id ? props.dropTarget.position : null,
+);
 
 function openMenu(event, pageId) {
   emit("open-menu", event, pageId);
 }
+
+function getDropPosition(event) {
+  const rect = event.currentTarget.getBoundingClientRect();
+  const offsetY = event.clientY - rect.top;
+  const topZone = rect.height * 0.28;
+  const bottomZone = rect.height * 0.72;
+
+  if (offsetY < topZone) {
+    return "before";
+  }
+
+  if (offsetY > bottomZone) {
+    return "after";
+  }
+
+  return "inside";
+}
+
+function handleDragStart(event) {
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("text/plain", props.page.id);
+  emit("page-drag-start", props.page.id);
+}
+
+function handleDragOver(event) {
+  emit("page-drag-over", event, props.page.id, getDropPosition(event));
+}
+
+function handleDrop(event) {
+  emit("page-drop", event, props.page.id, getDropPosition(event));
+}
+
+function forwardPageDragOver(event, pageId, position) {
+  emit("page-drag-over", event, pageId, position);
+}
+
+function forwardPageDrop(event, pageId, position) {
+  emit("page-drop", event, pageId, position);
+}
 </script>
 
 <template>
-  <div class="page-tree-node">
+  <div
+    class="page-tree-node"
+    :class="{ 'is-dragging': page.id === draggingPageId }"
+  >
     <div
       class="page-list-item"
-      :class="{ 'is-active': page.id === activePageId }"
+      :class="{
+        'is-active': page.id === activePageId,
+        'is-drop-before': dropPosition === 'before',
+        'is-drop-inside': dropPosition === 'inside',
+        'is-drop-after': dropPosition === 'after',
+      }"
+      draggable="true"
       role="button"
       tabindex="0"
       @click="$emit('select-page', page.id)"
       @keydown.enter.prevent="$emit('select-page', page.id)"
       @contextmenu.prevent="openMenu($event, page.id)"
+      @dragstart.stop="handleDragStart"
+      @dragover.stop="handleDragOver"
+      @drop.stop="handleDrop"
+      @dragend.stop="$emit('page-drag-end')"
     >
       <span class="page-item-main">
         <button
@@ -62,9 +133,15 @@ function openMenu(event, pageId) {
         :page="child"
         :active-page-id="activePageId"
         :expanded-page-ids="expandedPageIds"
+        :dragging-page-id="draggingPageId"
+        :drop-target="dropTarget"
         @select-page="$emit('select-page', $event)"
         @open-menu="openMenu"
         @toggle-expanded="$emit('toggle-expanded', $event)"
+        @page-drag-start="$emit('page-drag-start', $event)"
+        @page-drag-over="forwardPageDragOver"
+        @page-drop="forwardPageDrop"
+        @page-drag-end="$emit('page-drag-end')"
       />
     </div>
   </div>

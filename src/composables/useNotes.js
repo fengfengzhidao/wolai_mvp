@@ -176,6 +176,86 @@ export function useNotes() {
     saveStatus.value = "已保存";
   }
 
+  function isDescendantPage(pageId, possibleAncestorId) {
+    let currentPage = pages.value.find((page) => page.id === pageId);
+
+    while (currentPage?.parentId) {
+      if (currentPage.parentId === possibleAncestorId) {
+        return true;
+      }
+
+      currentPage = pages.value.find((page) => page.id === currentPage.parentId);
+    }
+
+    return false;
+  }
+
+  function movePage(draggedPageId, targetPageId, position = "after") {
+    if (
+      draggedPageId === targetPageId ||
+      isDescendantPage(targetPageId, draggedPageId)
+    ) {
+      return;
+    }
+
+    const draggedPage = pages.value.find((page) => page.id === draggedPageId);
+    const targetPage = pages.value.find((page) => page.id === targetPageId);
+
+    if (!draggedPage || !targetPage) {
+      return;
+    }
+
+    const nextParentId = position === "inside" ? targetPage.id : targetPage.parentId || null;
+    const siblingPages = pages.value
+      .filter((page) => page.id !== draggedPageId && (page.parentId || null) === nextParentId)
+      .sort((a, b) => {
+        if (a.order !== b.order) {
+          return a.order - b.order;
+        }
+
+        return b.updatedAt - a.updatedAt;
+      });
+    const targetIndex = siblingPages.findIndex((page) => page.id === targetPageId);
+    const insertionIndex =
+      position === "inside"
+        ? 0
+        : Math.max(0, targetIndex + (position === "after" ? 1 : 0));
+    const reorderedSiblings = [
+      ...siblingPages.slice(0, insertionIndex),
+      {
+        ...draggedPage,
+        parentId: nextParentId,
+      },
+      ...siblingPages.slice(insertionIndex),
+    ];
+    const orderedPageMap = new Map(
+      reorderedSiblings.map((page, index) => [
+        page.id,
+        {
+          parentId: nextParentId,
+          order: index,
+        },
+      ]),
+    );
+
+    pages.value = pages.value.map((page) => {
+      const orderedPage = orderedPageMap.get(page.id);
+
+      if (!orderedPage) {
+        return page;
+      }
+
+      return {
+        ...page,
+        ...orderedPage,
+        updatedAt: page.id === draggedPageId ? Date.now() : page.updatedAt,
+      };
+    });
+
+    persistPages();
+    saveStatus.value = "已保存";
+  }
+
   function updateActivePage(changes) {
     pages.value = pages.value.map((page) => {
       if (page.id !== activePageId.value) {
@@ -200,6 +280,7 @@ export function useNotes() {
     createChildPage,
     selectPage,
     deletePage,
+    movePage,
     updateActivePage,
   };
 }

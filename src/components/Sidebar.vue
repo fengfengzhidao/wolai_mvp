@@ -13,12 +13,22 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["create-page", "create-child-page", "select-page", "delete-page"]);
+const emit = defineEmits([
+  "create-page",
+  "create-child-page",
+  "select-page",
+  "delete-page",
+  "move-page",
+]);
 const contextMenu = ref({
   isOpen: false,
   pageId: null,
   x: 0,
   y: 0,
+});
+const dragState = ref({
+  draggingPageId: null,
+  dropTarget: null,
 });
 const expandedPageIds = ref(getParentIds(props.pages));
 
@@ -119,6 +129,73 @@ function requestCreateChildPage() {
   expandedPageIds.value = new Set([...expandedPageIds.value, pageId]);
 }
 
+function isDescendantPage(pageId, possibleAncestorId) {
+  let currentPage = props.pages.find((page) => page.id === pageId);
+
+  while (currentPage?.parentId) {
+    if (currentPage.parentId === possibleAncestorId) {
+      return true;
+    }
+
+    currentPage = props.pages.find((page) => page.id === currentPage.parentId);
+  }
+
+  return false;
+}
+
+function canDropPage(targetPageId) {
+  const draggingPageId = dragState.value.draggingPageId;
+
+  return Boolean(
+    draggingPageId &&
+      draggingPageId !== targetPageId &&
+      !isDescendantPage(targetPageId, draggingPageId),
+  );
+}
+
+function handlePageDragStart(pageId) {
+  closeContextMenu();
+  dragState.value = {
+    draggingPageId: pageId,
+    dropTarget: null,
+  };
+}
+
+function handlePageDragOver(event, pageId, position) {
+  if (!canDropPage(pageId)) {
+    return;
+  }
+
+  event.preventDefault();
+  dragState.value.dropTarget = {
+    pageId,
+    position,
+  };
+}
+
+function handlePageDrop(event, pageId, position) {
+  if (!canDropPage(pageId)) {
+    clearPageDrag();
+    return;
+  }
+
+  event.preventDefault();
+  emit("move-page", dragState.value.draggingPageId, pageId, position);
+
+  if (position === "inside") {
+    expandedPageIds.value = new Set([...expandedPageIds.value, pageId]);
+  }
+
+  clearPageDrag();
+}
+
+function clearPageDrag() {
+  dragState.value = {
+    draggingPageId: null,
+    dropTarget: null,
+  };
+}
+
 onBeforeUnmount(() => {
   window.removeEventListener("click", closeContextMenu);
 });
@@ -145,9 +222,15 @@ onBeforeUnmount(() => {
           :page="page"
           :active-page-id="activePageId"
           :expanded-page-ids="expandedPageIds"
+          :dragging-page-id="dragState.draggingPageId"
+          :drop-target="dragState.dropTarget"
           @select-page="$emit('select-page', $event)"
           @open-menu="openContextMenu"
           @toggle-expanded="toggleExpanded"
+          @page-drag-start="handlePageDragStart"
+          @page-drag-over="handlePageDragOver"
+          @page-drop="handlePageDrop"
+          @page-drag-end="clearPageDrag"
         />
       </div>
       <p v-if="pages.length === 0" class="empty-list is-visible">还没有页面</p>
