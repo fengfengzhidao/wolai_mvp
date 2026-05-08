@@ -3,6 +3,7 @@ import { computed, nextTick, ref, watch } from "vue";
 import BlockEditor from "./BlockEditor.vue";
 import { formatTime } from "../utils/formatTime";
 import { normalizeCodeLanguage } from "../utils/codeLanguages";
+import { exportPageAsMarkdown } from "../utils/markdownExport";
 import {
   changeBlockType as changeBlocksType,
   createBlock,
@@ -119,6 +120,10 @@ function requestDeletePage() {
   if (confirmed) {
     emit("delete-page", props.page.id);
   }
+}
+
+function requestExportMarkdown() {
+  exportPageAsMarkdown(props.page, props.pages);
 }
 
 function changeBlockLanguage(blockId, language) {
@@ -453,6 +458,15 @@ async function deleteBlocks(blockIds) {
       </nav>
       <div class="editor-actions" aria-label="页面操作">
         <span class="editor-topbar-status">{{ saveStatus }}</span>
+        <button
+          class="editor-action-button"
+          type="button"
+          :disabled="!page"
+          title="导出当前页面为 Markdown"
+          @click="requestExportMarkdown"
+        >
+          MD
+        </button>
         <button
           class="editor-action-button"
           type="button"
