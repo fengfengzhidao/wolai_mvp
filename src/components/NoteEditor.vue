@@ -241,7 +241,7 @@ function parsePastedLine(line) {
   const trimmedLine = line.trim();
 
   if (!trimmedLine) {
-    return null;
+    return createBlock("paragraph", "");
   }
 
   const headingMatch = trimmedLine.match(/^(#{1,6})\s+(.*)$/);
