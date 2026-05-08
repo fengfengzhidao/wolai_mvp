@@ -63,67 +63,67 @@ const blockTypeOptions = [
     type: "paragraph",
     label: "正文",
     description: "普通文本块",
-    keywords: ["text", "p"],
+    keywords: ["text", "p", "paragraph", "normal", "wenben", "zhengwen", "文字", "文本", "图片", "image", "img", "tupian"],
   },
   {
     type: "heading1",
     label: "一级标题",
     description: "大标题",
-    keywords: ["h1", "title", "biaoti"],
+    keywords: ["h", "h1", "title", "heading", "biaoti", "bt", "yiji", "标题", "大标题"],
   },
   {
     type: "heading2",
     label: "二级标题",
     description: "小标题",
-    keywords: ["h2", "subtitle", "biaoti"],
+    keywords: ["h", "h2", "subtitle", "heading", "biaoti", "bt", "erji", "标题", "小标题"],
   },
   {
     type: "heading3",
     label: "三级标题",
     description: "章节标题",
-    keywords: ["h3", "biaoti"],
+    keywords: ["h", "h3", "heading", "biaoti", "bt", "sanji", "标题", "章节"],
   },
   {
     type: "heading4",
     label: "四级标题",
     description: "小节标题",
-    keywords: ["h4", "biaoti"],
+    keywords: ["h", "h4", "heading", "biaoti", "bt", "siji", "标题", "小节"],
   },
   {
     type: "heading5",
     label: "五级标题",
     description: "段落标题",
-    keywords: ["h5", "biaoti"],
+    keywords: ["h", "h5", "heading", "biaoti", "bt", "wuji", "标题"],
   },
   {
     type: "heading6",
     label: "六级标题",
     description: "辅助标题",
-    keywords: ["h6", "biaoti"],
+    keywords: ["h", "h6", "heading", "biaoti", "bt", "liuji", "标题"],
   },
   {
     type: "bullet",
     label: "无序列表",
     description: "项目符号列表",
-    keywords: ["ul", "list", "bullet"],
+    keywords: ["ul", "list", "bullet", "wuxu", "liebiao", "lb", "列表", "无序", "项目"],
   },
   {
     type: "numbered",
     label: "有序列表",
     description: "编号列表",
-    keywords: ["ol", "list", "number"],
+    keywords: ["ol", "list", "number", "ordered", "youxu", "bianhao", "liebiao", "lb", "列表", "有序", "编号"],
   },
   {
     type: "todo",
     label: "待办",
     description: "可勾选任务",
-    keywords: ["task", "check", "todo"],
+    keywords: ["task", "check", "todo", "checkbox", "daiban", "renwu", "待办", "任务", "清单"],
   },
   {
     type: "code",
     label: "代码",
     description: "多行代码块",
-    keywords: ["code", "pre", "```"],
+    keywords: ["code", "pre", "```", "daima", "dm", "代码", "代码块", "program"],
   },
 ];
 
@@ -136,19 +136,25 @@ const filteredBlockTypeOptions = computed(() => {
     return blockTypeOptions;
   }
 
-  return blockTypeOptions.filter((option) => {
-    const searchableText = [
-      option.type,
-      option.label,
-      option.description,
-      ...option.keywords,
-    ]
-      .join(" ")
-      .toLowerCase();
-
-    return searchableText.includes(query);
-  });
+  return blockTypeOptions.filter((option) => optionMatchesSlashQuery(option, query));
 });
+
+function optionMatchesSlashQuery(option, query) {
+  const tokens = [
+    option.type,
+    option.label,
+    option.description,
+    ...option.keywords,
+  ].map((token) => String(token).toLowerCase());
+
+  return tokens.some((token) =>
+    isAsciiQuery(query) ? token.startsWith(query) : token.includes(query),
+  );
+}
+
+function isAsciiQuery(query) {
+  return /^[\x00-\x7F]+$/.test(query);
+}
 
 const blockTypeMenuItems = computed(() =>
   blockTypeOptions.map((option) => ({
