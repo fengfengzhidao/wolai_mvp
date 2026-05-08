@@ -128,6 +128,36 @@ export function useNotes() {
     return siblingOrders.length > 0 ? Math.min(...siblingOrders) : 0;
   }
 
+  function normalizeSiblingOrders(parentId, insertedPageId, insertionIndex) {
+    const siblings = pages.value
+      .filter((page) => (page.parentId || null) === parentId)
+      .sort((a, b) => {
+        if (a.order !== b.order) {
+          return a.order - b.order;
+        }
+
+        return b.updatedAt - a.updatedAt;
+      });
+    const insertedPage = siblings.find((page) => page.id === insertedPageId);
+
+    if (!insertedPage) {
+      return;
+    }
+
+    const orderedSiblings = siblings.filter((page) => page.id !== insertedPageId);
+    orderedSiblings.splice(insertionIndex, 0, insertedPage);
+    const orderMap = new Map(orderedSiblings.map((page, index) => [page.id, index]));
+
+    pages.value = pages.value.map((page) =>
+      orderMap.has(page.id)
+        ? {
+            ...page,
+            order: orderMap.get(page.id),
+          }
+        : page,
+    );
+  }
+
   function createNewPage(parentId = null) {
     const newPage = createPage();
     newPage.parentId = parentId;
@@ -139,6 +169,85 @@ export function useNotes() {
 
   function createChildPage(parentId) {
     createNewPage(parentId);
+  }
+
+  function createSiblingPageAfter(targetPageId) {
+    const targetPage = pages.value.find((page) => page.id === targetPageId);
+
+    if (!targetPage) {
+      createNewPage();
+      return;
+    }
+
+    const parentId = targetPage.parentId || null;
+    const newPage = createPage();
+    const siblings = pages.value
+      .filter((page) => (page.parentId || null) === parentId)
+      .sort((a, b) => {
+        if (a.order !== b.order) {
+          return a.order - b.order;
+        }
+
+        return b.updatedAt - a.updatedAt;
+      });
+    const targetIndex = siblings.findIndex((page) => page.id === targetPageId);
+
+    newPage.parentId = parentId;
+    pages.value = [newPage, ...pages.value];
+    normalizeSiblingOrders(parentId, newPage.id, targetIndex + 1);
+    activePageId.value = newPage.id;
+    persistPages();
+  }
+
+  function renamePage(pageId, title) {
+    pages.value = pages.value.map((page) =>
+      page.id === pageId
+        ? {
+            ...page,
+            title: String(title || "").trim() || "未命名页面",
+            updatedAt: Date.now(),
+          }
+        : page,
+    );
+
+    persistPages();
+    saveStatus.value = "已保存";
+  }
+
+  function duplicatePage(pageId) {
+    const sourcePage = pages.value.find((page) => page.id === pageId);
+
+    if (!sourcePage) {
+      return;
+    }
+
+    const now = Date.now();
+    const parentId = sourcePage.parentId || null;
+    const duplicatedPage = {
+      ...sourcePage,
+      id: crypto.randomUUID(),
+      title: `${sourcePage.title?.trim() || "未命名页面"} 副本`,
+      blocks: cloneBlocks(sourcePage.blocks),
+      parentId,
+      createdAt: now,
+      updatedAt: now,
+    };
+    const siblings = pages.value
+      .filter((page) => (page.parentId || null) === parentId)
+      .sort((a, b) => {
+        if (a.order !== b.order) {
+          return a.order - b.order;
+        }
+
+        return b.updatedAt - a.updatedAt;
+      });
+    const sourceIndex = siblings.findIndex((page) => page.id === pageId);
+
+    pages.value = [duplicatedPage, ...pages.value];
+    normalizeSiblingOrders(parentId, duplicatedPage.id, sourceIndex + 1);
+    activePageId.value = duplicatedPage.id;
+    persistPages();
+    saveStatus.value = "已保存";
   }
 
   function selectPage(pageId) {
@@ -256,6 +365,33 @@ export function useNotes() {
     saveStatus.value = "已保存";
   }
 
+  function movePageToParent(pageId, parentId = null) {
+    if (pageId === parentId || (parentId && isDescendantPage(parentId, pageId))) {
+      return;
+    }
+
+    const normalizedParentId = pages.value.some((page) => page.id === parentId)
+      ? parentId
+      : null;
+    const siblingCount = pages.value.filter(
+      (page) => page.id !== pageId && (page.parentId || null) === normalizedParentId,
+    ).length;
+
+    pages.value = pages.value.map((page) =>
+      page.id === pageId
+        ? {
+            ...page,
+            parentId: normalizedParentId,
+            order: siblingCount,
+            updatedAt: Date.now(),
+          }
+        : page,
+    );
+
+    persistPages();
+    saveStatus.value = "已保存";
+  }
+
   function updateActivePage(changes) {
     pages.value = pages.value.map((page) => {
       if (page.id !== activePageId.value) {
@@ -278,9 +414,20 @@ export function useNotes() {
     saveStatus,
     createNewPage,
     createChildPage,
+    createSiblingPageAfter,
     selectPage,
     deletePage,
+    renamePage,
+    duplicatePage,
     movePage,
+    movePageToParent,
     updateActivePage,
   };
+}
+
+function cloneBlocks(blocks) {
+  return (Array.isArray(blocks) ? blocks : []).map((block) => ({
+    ...block,
+    id: crypto.randomUUID(),
+  }));
 }

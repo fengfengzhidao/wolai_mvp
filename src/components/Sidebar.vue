@@ -1,6 +1,8 @@
 <script setup>
-import { computed, onBeforeUnmount, ref } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import PageTreeNode from "./PageTreeNode.vue";
+
+const EXPANDED_PAGE_IDS_KEY = "wolai_mvp_expanded_page_ids";
 
 const props = defineProps({
   pages: {
@@ -16,9 +18,13 @@ const props = defineProps({
 const emit = defineEmits([
   "create-page",
   "create-child-page",
+  "create-sibling-page-after",
   "select-page",
   "delete-page",
+  "rename-page",
+  "duplicate-page",
   "move-page",
+  "move-page-to-parent",
 ]);
 const contextMenu = ref({
   isOpen: false,
@@ -30,9 +36,18 @@ const dragState = ref({
   draggingPageId: null,
   dropTarget: null,
 });
-const expandedPageIds = ref(getParentIds(props.pages));
+const expandedPageIds = ref(getInitialExpandedPageIds(props.pages));
 
 const pageTree = computed(() => buildPageTree(props.pages));
+const currentMenuPage = computed(() =>
+  props.pages.find((page) => page.id === contextMenu.value.pageId) || null,
+);
+const moveTargetPages = computed(() =>
+  props.pages
+    .filter((page) => page.id !== contextMenu.value.pageId)
+    .filter((page) => !isDescendantPage(page.id, contextMenu.value.pageId))
+    .sort((a, b) => a.title.localeCompare(b.title, "zh-Hans-CN")),
+);
 
 function buildPageTree(pages) {
   const pageById = new Map();
@@ -77,6 +92,27 @@ function getParentIds(pages) {
   );
 }
 
+function getInitialExpandedPageIds(pages) {
+  try {
+    const storedIds = JSON.parse(localStorage.getItem(EXPANDED_PAGE_IDS_KEY) || "[]");
+    if (Array.isArray(storedIds)) {
+      const validPageIds = new Set(pages.map((page) => page.id));
+      return new Set(storedIds.filter((pageId) => validPageIds.has(pageId)));
+    }
+  } catch {
+    // Keep the first-run default below.
+  }
+
+  return getParentIds(pages);
+}
+
+function persistExpandedPageIds() {
+  localStorage.setItem(
+    EXPANDED_PAGE_IDS_KEY,
+    JSON.stringify([...expandedPageIds.value]),
+  );
+}
+
 function toggleExpanded(pageId) {
   const nextExpandedPageIds = new Set(expandedPageIds.value);
 
@@ -87,6 +123,7 @@ function toggleExpanded(pageId) {
   }
 
   expandedPageIds.value = nextExpandedPageIds;
+  persistExpandedPageIds();
 }
 
 function openContextMenu(event, pageId) {
@@ -127,6 +164,55 @@ function requestCreateChildPage() {
 
   emit("create-child-page", pageId);
   expandedPageIds.value = new Set([...expandedPageIds.value, pageId]);
+  persistExpandedPageIds();
+}
+
+function requestCreateSiblingPageAfter() {
+  const pageId = contextMenu.value.pageId;
+  closeContextMenu();
+
+  if (pageId) {
+    emit("create-sibling-page-after", pageId);
+  }
+}
+
+function requestRenamePage() {
+  const page = currentMenuPage.value;
+  closeContextMenu();
+
+  if (!page) {
+    return;
+  }
+
+  const nextTitle = window.prompt("页面名称", page.title || "未命名页面");
+  if (nextTitle !== null) {
+    emit("rename-page", page.id, nextTitle);
+  }
+}
+
+function requestDuplicatePage() {
+  const pageId = contextMenu.value.pageId;
+  closeContextMenu();
+
+  if (pageId) {
+    emit("duplicate-page", pageId);
+  }
+}
+
+function requestMoveToParent(parentId) {
+  const pageId = contextMenu.value.pageId;
+  closeContextMenu();
+
+  if (!pageId) {
+    return;
+  }
+
+  emit("move-page-to-parent", pageId, parentId);
+
+  if (parentId) {
+    expandedPageIds.value = new Set([...expandedPageIds.value, parentId]);
+    persistExpandedPageIds();
+  }
 }
 
 function isDescendantPage(pageId, possibleAncestorId) {
@@ -184,6 +270,7 @@ function handlePageDrop(event, pageId, position) {
 
   if (position === "inside") {
     expandedPageIds.value = new Set([...expandedPageIds.value, pageId]);
+    persistExpandedPageIds();
   }
 
   clearPageDrag();
@@ -199,6 +286,17 @@ function clearPageDrag() {
 onBeforeUnmount(() => {
   window.removeEventListener("click", closeContextMenu);
 });
+
+watch(
+  () => props.pages.map((page) => page.id).join("|"),
+  () => {
+    const validPageIds = new Set(props.pages.map((page) => page.id));
+    expandedPageIds.value = new Set(
+      [...expandedPageIds.value].filter((pageId) => validPageIds.has(pageId)),
+    );
+    persistExpandedPageIds();
+  },
+);
 </script>
 
 <template>
@@ -242,9 +340,47 @@ onBeforeUnmount(() => {
       :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
       @click.stop
     >
+      <button class="context-menu-item" type="button" @click="requestRenamePage">
+        重命名
+      </button>
+      <button class="context-menu-item" type="button" @click="requestCreateSiblingPageAfter">
+        在下方新建
+      </button>
       <button class="context-menu-item" type="button" @click="requestCreateChildPage">
         新建子页面
       </button>
+      <button class="context-menu-item" type="button" @click="requestDuplicatePage">
+        复制页面
+      </button>
+      <div class="context-menu-submenu">
+        <button
+          class="context-menu-item context-menu-submenu-trigger"
+          type="button"
+          aria-haspopup="menu"
+        >
+          移动到
+        </button>
+        <div class="context-menu-submenu-content" role="menu">
+          <button
+            class="context-menu-item"
+            type="button"
+            role="menuitem"
+            @click="requestMoveToParent(null)"
+          >
+            根目录
+          </button>
+          <button
+            v-for="page in moveTargetPages"
+            :key="page.id"
+            class="context-menu-item"
+            type="button"
+            role="menuitem"
+            @click="requestMoveToParent(page.id)"
+          >
+            {{ page.title.trim() || "未命名页面" }}
+          </button>
+        </div>
+      </div>
       <button class="context-menu-item is-danger" type="button" @click="requestDeletePage">
         删除页面
       </button>

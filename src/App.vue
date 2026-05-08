@@ -9,9 +9,13 @@ const {
   saveStatus,
   createNewPage,
   createChildPage,
+  createSiblingPageAfter,
   selectPage,
   deletePage,
+  renamePage,
+  duplicatePage,
   movePage,
+  movePageToParent,
   updateActivePage,
 } = useNotes();
 </script>
@@ -23,9 +27,13 @@ const {
       :active-page-id="activePage?.id || null"
       @create-page="createNewPage"
       @create-child-page="createChildPage"
+      @create-sibling-page-after="createSiblingPageAfter"
       @select-page="selectPage"
       @delete-page="deletePage"
+      @rename-page="renamePage"
+      @duplicate-page="duplicatePage"
       @move-page="movePage"
+      @move-page-to-parent="movePageToParent"
     />
     <NoteEditor
       :page="activePage"
