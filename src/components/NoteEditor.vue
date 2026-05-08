@@ -255,7 +255,26 @@ function parsePastedText(text) {
     );
   }
 
-  return blocks.length > 0 ? blocks : [createBlock("paragraph", text)];
+  const normalizedBlocks = normalizePastedBlocks(blocks);
+
+  return normalizedBlocks.length > 0 ? normalizedBlocks : [createBlock("paragraph", text)];
+}
+
+function normalizePastedBlocks(blocks) {
+  return blocks.filter((block, index) => {
+    if (block.type !== "paragraph" || block.text !== "") {
+      return true;
+    }
+
+    const previousBlock = blocks[index - 1];
+    const nextBlock = blocks[index + 1];
+
+    return !isHeadingBlock(previousBlock) && nextBlock?.type !== "code";
+  });
+}
+
+function isHeadingBlock(block) {
+  return /^heading[1-6]$/.test(block?.type || "");
 }
 
 function parsePastedLine(line) {
