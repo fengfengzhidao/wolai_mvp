@@ -221,7 +221,11 @@ function parsePastedText(text) {
     }
 
     const parsedBlock = parsePastedLine(line);
-    if (parsedBlock) {
+    const previousBlock = blocks.at(-1);
+    if (
+      parsedBlock &&
+      !(parsedBlock.text === "" && previousBlock?.type === "paragraph" && previousBlock.text === "")
+    ) {
       blocks.push(parsedBlock);
     }
   }
