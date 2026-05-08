@@ -586,15 +586,6 @@ function handleEditorPointerDown(event) {
   }
 
   pointerStartedInEditable.value = isTextSelectionTarget(event.target);
-
-  if (pointerStartedInEditable.value) {
-    pointerStart.value = null;
-    pointerCurrent.value = null;
-    selectionStartPoint.value = null;
-    isPointerSelecting.value = false;
-    return;
-  }
-
   pointerStart.value = {
     x: event.clientX,
     y: event.clientY,
@@ -605,16 +596,22 @@ function handleEditorPointerDown(event) {
 }
 
 function handleDocumentPointerMove(event) {
-  if (!pointerStart.value || pointerStartedInEditable.value) {
+  if (!pointerStart.value) {
     return;
   }
 
-  const deltaX = Math.abs(event.clientX - pointerStart.value.x);
+  const horizontalDelta = event.clientX - pointerStart.value.x;
+  const deltaX = Math.abs(horizontalDelta);
   const deltaY = Math.abs(event.clientY - pointerStart.value.y);
   pointerCurrent.value = {
     x: event.clientX,
     y: event.clientY,
   };
+
+  if (pointerStartedInEditable.value && horizontalDelta <= 2) {
+    isPointerSelecting.value = false;
+    return;
+  }
 
   if (deltaX > 2 || deltaY > 2) {
     isPointerSelecting.value = true;
@@ -632,8 +629,10 @@ function handleDocumentPointerUp(event) {
     startPoint &&
     (Math.abs(endPoint.x - startPoint.x) > 2 ||
       Math.abs(endPoint.y - startPoint.y) > 2);
+  const isLeftToRightSelection =
+    !startedInTextSelection || (startPoint && endPoint.x - startPoint.x > 2);
   const shouldSelectBlocks =
-    movedFarEnough && startPoint && !didDropBlock.value && !pointerStartedInEditable.value;
+    movedFarEnough && startPoint && !didDropBlock.value && isLeftToRightSelection;
 
   pointerCurrent.value = endPoint;
   pointerStart.value = null;
