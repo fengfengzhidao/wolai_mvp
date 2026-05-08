@@ -1,7 +1,9 @@
 <script setup>
 import { basicSetup, EditorView } from "codemirror";
+import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { Compartment, EditorState, Prec } from "@codemirror/state";
 import { keymap } from "@codemirror/view";
+import { tags } from "@lezer/highlight";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import {
   CODE_LANGUAGES,
@@ -107,6 +109,7 @@ function createEditor() {
         basicSetup,
         EditorView.lineWrapping,
         codeBlockTheme,
+        syntaxHighlighting(wolaiHighlightStyle),
         languageCompartment.of(getCodeLanguageExtension(props.block.language)),
         editableCompartment.of(EditorView.editable.of(!props.disabled)),
         EditorView.updateListener.of((update) => {
@@ -272,31 +275,49 @@ const codeBlockTheme = EditorView.theme(
     ".cm-selectionBackground": {
       backgroundColor: "rgba(138, 79, 85, 0.5) !important",
     },
-    ".tok-keyword": {
-      color: "#ff79c6",
-    },
-    ".tok-variableName": {
-      color: "#f2f2f2",
-    },
-    ".tok-function, .tok-className, .tok-propertyName": {
-      color: "#4df276",
-    },
-    ".tok-string": {
-      color: "#f1ff8f",
-    },
-    ".tok-number, .tok-bool": {
-      color: "#8be9fd",
-    },
-    ".tok-operator, .tok-punctuation": {
-      color: "#e8e8e8",
-    },
-    ".tok-comment": {
-      color: "#7f879d",
-      fontStyle: "italic",
-    },
   },
   { dark: true },
 );
+
+const wolaiHighlightStyle = HighlightStyle.define([
+  {
+    tag: [tags.keyword, tags.controlKeyword, tags.definitionKeyword],
+    color: "#ff7ac8",
+  },
+  {
+    tag: [tags.name, tags.variableName],
+    color: "#f2f3f5",
+  },
+  {
+    tag: [tags.function(tags.variableName), tags.function(tags.propertyName)],
+    color: "#5cff86",
+  },
+  {
+    tag: [tags.propertyName, tags.attributeName, tags.className, tags.typeName],
+    color: "#5cff86",
+  },
+  {
+    tag: [tags.string, tags.special(tags.string)],
+    color: "#f4ff8f",
+  },
+  {
+    tag: [tags.number, tags.bool, tags.null],
+    color: "#8be9fd",
+  },
+  {
+    tag: [tags.operator, tags.compareOperator, tags.logicOperator, tags.arithmeticOperator],
+    color: "#8be9fd",
+  },
+  {
+    tag: [tags.punctuation, tags.bracket, tags.paren, tags.brace, tags.squareBracket],
+    color: "#f2f3f5",
+  },
+  {
+    tag: [tags.comment, tags.lineComment, tags.blockComment],
+    color: "#8a91a8",
+    fontStyle: "italic",
+  },
+]);
 </script>
 
 <template>
