@@ -10,6 +10,7 @@ import {
   duplicateBlock as duplicateBlockById,
   getContentFromBlocks,
   insertBlockAfter as insertBlockAfterId,
+  insertBlockBefore as insertBlockBeforeId,
   moveBlockToPosition,
   toggleBlockChecked,
   updateBlockLanguage,
@@ -176,6 +177,22 @@ function getBlockShortcut(text) {
 
 async function insertBlockAfter(blockId, type = "paragraph") {
   const { blocks, insertedBlockId } = insertBlockAfterId(
+    props.page?.blocks || [],
+    blockId,
+    type,
+  );
+
+  emit("update-page", {
+    blocks,
+    content: getContentFromBlocks(blocks),
+  });
+
+  await nextTick();
+  blockEditor.value?.focusBlock(insertedBlockId);
+}
+
+async function insertBlockBefore(blockId, type = "paragraph") {
+  const { blocks, insertedBlockId } = insertBlockBeforeId(
     props.page?.blocks || [],
     blockId,
     type,
@@ -459,6 +476,7 @@ async function deleteBlocks(blockIds) {
         @toggle-block="toggleBlock"
         @change-block-type="changeBlockType"
         @insert-block-after="insertBlockAfter"
+        @insert-block-before="insertBlockBefore"
         @paste-blocks="pasteBlocks"
         @delete-empty-block="deleteEmptyBlock"
         @move-block-to-position="moveBlockToTarget"

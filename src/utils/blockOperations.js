@@ -209,6 +209,22 @@ export function insertBlockAfter(blocks, blockId, type = "paragraph") {
   };
 }
 
+export function insertBlockBefore(blocks, blockId, type = "paragraph") {
+  const currentBlocks = normalizeBlocksInput(blocks);
+  const blockIndex = currentBlocks.findIndex((block) => block.id === blockId);
+  const insertedBlock = createBlock(type);
+  const insertionIndex = blockIndex === -1 ? 0 : blockIndex;
+
+  return {
+    blocks: [
+      ...currentBlocks.slice(0, insertionIndex),
+      insertedBlock,
+      ...currentBlocks.slice(insertionIndex),
+    ],
+    insertedBlockId: insertedBlock.id,
+  };
+}
+
 function normalizeBlocksInput(blocks) {
   return Array.isArray(blocks) ? [...blocks] : [];
 }

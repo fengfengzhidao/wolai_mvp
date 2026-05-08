@@ -20,6 +20,7 @@ const emit = defineEmits([
   "toggle-block",
   "change-block-type",
   "insert-block-after",
+  "insert-block-before",
   "paste-blocks",
   "delete-empty-block",
   "move-block-to-position",
@@ -511,7 +512,7 @@ function handleKeydown(event, blockId) {
 
     if (event.key === "Enter") {
       event.preventDefault();
-      handleEnter(block);
+      handleEnter(block, event.target);
     }
 
     if (event.key === "ArrowUp" && isAtTextStart(event.target)) {
@@ -601,8 +602,13 @@ function focusAdjacentBlock(blockId, direction) {
   focusBlockAt(nextBlock.id, direction === "previous" ? "end" : "start");
 }
 
-function handleEnter(block) {
+function handleEnter(block, target) {
   if (!block) {
+    return;
+  }
+
+  if (isAtTextStart(target)) {
+    emit("insert-block-before", block.id);
     return;
   }
 
