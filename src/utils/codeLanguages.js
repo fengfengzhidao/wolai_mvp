@@ -1,4 +1,5 @@
 import { css } from "@codemirror/lang-css";
+import { go } from "@codemirror/lang-go";
 import { html } from "@codemirror/lang-html";
 import { javascript } from "@codemirror/lang-javascript";
 import { json } from "@codemirror/lang-json";
@@ -30,6 +31,7 @@ export const CODE_LANGUAGES = [
   { value: "yaml", label: "YAML", aliases: ["yml"], extension: () => yaml() },
   { value: "markdown", label: "Markdown", aliases: ["md"], extension: () => markdown() },
   { value: "python", label: "Python", aliases: ["py"], extension: () => python() },
+  { value: "go", label: "Go", aliases: ["golang"], extension: () => go() },
   { value: "sql", label: "SQL", extension: () => sql() },
   { value: "vue", label: "Vue", extension: () => vue() },
   { value: "php", label: "PHP", extension: () => php() },
