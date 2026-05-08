@@ -1,7 +1,5 @@
 import { computed, ref } from "vue";
-
-const STORAGE_KEY = "wolai_mvp_pages";
-const ACTIVE_PAGE_KEY = "wolai_mvp_active_page";
+import { localNotesRepository } from "../repositories/notesRepository";
 
 function createBlock(text = "") {
   return {
@@ -70,21 +68,16 @@ function migratePageBlocks(page) {
   };
 }
 
-function loadPages() {
-  try {
-    const storedPages = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    return Array.isArray(storedPages)
-      ? storedPages.map((page, index) => normalizePageTreeFields(migratePageBlocks(page), index))
-      : [];
-  } catch {
-    return [];
-  }
+function loadPages(notesRepository) {
+  return notesRepository
+    .loadPages()
+    .map((page, index) => normalizePageTreeFields(migratePageBlocks(page), index));
 }
 
-export function useNotes() {
-  const initialPages = loadPages();
+export function useNotes(notesRepository = localNotesRepository) {
+  const initialPages = loadPages(notesRepository);
   const pages = ref(initialPages);
-  const activePageId = ref(localStorage.getItem(ACTIVE_PAGE_KEY) || pages.value[0]?.id || null);
+  const activePageId = ref(notesRepository.loadActivePageId() || pages.value[0]?.id || null);
   const saveStatus = ref("已保存");
   const saveTimer = ref(null);
 
@@ -104,10 +97,8 @@ export function useNotes() {
   );
 
   function persistPages() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(pages.value));
-    if (activePageId.value) {
-      localStorage.setItem(ACTIVE_PAGE_KEY, activePageId.value);
-    }
+    notesRepository.savePages(pages.value);
+    notesRepository.saveActivePageId(activePageId.value);
   }
 
   function queueSave() {
@@ -275,10 +266,6 @@ export function useNotes() {
 
     if (activePageId.value && deletedPageIds.has(activePageId.value)) {
       activePageId.value = nextPages[0]?.id || null;
-    }
-
-    if (!activePageId.value) {
-      localStorage.removeItem(ACTIVE_PAGE_KEY);
     }
 
     persistPages();

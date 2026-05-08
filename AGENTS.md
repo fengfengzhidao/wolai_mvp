@@ -51,7 +51,8 @@ npm run build
 - `src/components/NoteEditor.vue`：顶部面包屑/操作栏、页面标题、块编辑器和页面更新逻辑
 - `src/components/BlockEditor.vue`：块级输入、键盘交互、斜杠菜单、块右键菜单、图片块交互和多选
 - `src/components/CodeBlock.vue`：CodeMirror 6 代码块编辑、高亮、语言选择和复制
-- `src/composables/useNotes.js`：页面数据、当前页面、创建、选择、删除、重命名、复制、移动、保存
+- `src/composables/useNotes.js`：页面状态和页面操作编排，支持注入 notes repository
+- `src/repositories/notesRepository.js`：笔记数据本地持久化 repository，当前实现基于 `localStorage`
 - `src/utils/blockOperations.js`：块创建、转换、复制、删除、移动等通用操作
 - `src/utils/codeLanguages.js`：代码块语言列表和 CodeMirror 语言扩展映射
 - `src/utils/markdownExport.js`：当前页面 Markdown 导出转换和下载
@@ -206,6 +207,7 @@ npm run build
 - `content` 目前保留作兼容字段，由 blocks 文本拼接生成。
 - `parentId` / `order` 用于左侧页面树；页面仍以平铺数组保存在 `localStorage`，渲染时组装树。
 - 页面树展开状态单独保存在 `localStorage` 的 `wolai_mvp_expanded_page_ids` 中。
+- 页面主数据和当前页面 id 已通过 `notesRepository` 抽象，后续可替换为 HTTP repository。
 - 旧页面数据读取时会自动补齐 `blocks`、`parentId`、`order` 等字段。
 - 不要在当前阶段引入数据库、后端或账号系统。
 
@@ -265,6 +267,7 @@ npm run build
 - 左侧页面树采用平铺数据结构加 `parentId` 的方式实现，避免过早把本地数据改成深层嵌套数组。
 - 图片在当前阶段不做上传；纯图片块基于 Markdown 图片语法 `![alt](url)` 渲染和交互。
 - 框选块采用左侧空白栏向右拖动的方式触发，减少和正文选择、代码编辑的冲突。
+- 后端接入前先抽象本地数据 repository，当前 `useNotes` 默认使用 `localNotesRepository`，后续可注入 HTTP 实现。
 
 ## 开发约定
 
