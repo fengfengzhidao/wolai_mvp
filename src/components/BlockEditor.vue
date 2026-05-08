@@ -700,6 +700,72 @@ function deleteSelectedBlocks() {
   clearBlockSelection();
 }
 
+function getSelectedBlocksInDocumentOrder() {
+  const selectedIds = new Set(selectedBlockIds.value);
+
+  return props.blocks.filter((block) => selectedIds.has(block.id));
+}
+
+function serializeBlockForClipboard(block, numberedIndex = 1) {
+  if (/^heading[1-6]$/.test(block.type)) {
+    const headingLevel = Number(block.type.replace("heading", ""));
+    return `${"#".repeat(headingLevel)} ${block.text}`;
+  }
+
+  if (block.type === "bullet") {
+    return `- ${block.text}`;
+  }
+
+  if (block.type === "numbered") {
+    return `${numberedIndex}. ${block.text}`;
+  }
+
+  if (block.type === "todo") {
+    return `${block.checked ? "[x]" : "[ ]"} ${block.text}`;
+  }
+
+  if (block.type === "code") {
+    const language = block.language && block.language !== "plaintext" ? block.language : "";
+    return `\`\`\`${language}\n${block.text || ""}\n\`\`\``;
+  }
+
+  return block.text || "";
+}
+
+function serializeSelectedBlocksForClipboard() {
+  let numberedIndex = 1;
+
+  return getSelectedBlocksInDocumentOrder()
+    .map((block) => {
+      if (block.type !== "numbered") {
+        numberedIndex = 1;
+        return serializeBlockForClipboard(block);
+      }
+
+      const serializedBlock = serializeBlockForClipboard(block, numberedIndex);
+      numberedIndex += 1;
+      return serializedBlock;
+    })
+    .join("\n");
+}
+
+async function copySelectedBlocks(event) {
+  if (selectedBlockIds.value.length === 0) {
+    return;
+  }
+
+  const target = event.target;
+  if (
+    target instanceof HTMLElement &&
+    target.closest("input, textarea, .cm-editor, .block-action-menu, .image-action-menu, .slash-menu")
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+  await navigator.clipboard?.writeText(serializeSelectedBlocksForClipboard());
+}
+
 function startBlockSelection(event) {
   pointerStartedInEditable.value = false;
   pointerStart.value = {
@@ -874,6 +940,11 @@ function handleDocumentKeydown(event) {
   if (event.key === "Escape" && previewImage.value) {
     event.preventDefault();
     closeImagePreview();
+    return;
+  }
+
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "c") {
+    copySelectedBlocks(event);
     return;
   }
 
