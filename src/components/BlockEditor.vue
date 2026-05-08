@@ -628,17 +628,22 @@ function handleEnter(block, target) {
     return;
   }
 
+  if (block.text.trim() === "") {
+    if (listBlockTypes.includes(block.type)) {
+      emit("change-block-type", block.id, "paragraph");
+      return;
+    }
+
+    emit("insert-block-after", block.id);
+    return;
+  }
+
   if (isAtTextStart(target)) {
     emit("insert-block-before", block.id);
     return;
   }
 
   if (listBlockTypes.includes(block.type)) {
-    if (block.text.trim() === "") {
-      emit("change-block-type", block.id, "paragraph");
-      return;
-    }
-
     emit("insert-block-after", block.id, block.type);
     return;
   }
