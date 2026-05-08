@@ -42,6 +42,14 @@ const blockMenu = ref({
   x: 0,
   y: 0,
 });
+const imageMenu = ref({
+  isOpen: false,
+  blockId: null,
+  image: null,
+  x: 0,
+  y: 0,
+});
+const previewImage = ref(null);
 const slashMenu = ref({
   isOpen: false,
   blockId: null,
@@ -245,6 +253,20 @@ function hasMarkdownPreview(block) {
   );
 }
 
+function getImageBlockToken(block) {
+  if (block.type === "code") {
+    return null;
+  }
+
+  const tokens = parseMarkdownPreview(block.text);
+  const imageTokens = tokens.filter((token) => token.type === "image" && token.url);
+  const hasOtherContent = tokens.some((token) =>
+    token.type === "text" ? token.value.trim() !== "" : token.type !== "image",
+  );
+
+  return imageTokens.length === 1 && !hasOtherContent ? imageTokens[0] : null;
+}
+
 function parseMarkdownPreview(text) {
   const sourceText = typeof text === "string" ? text : "";
   const tokens = [];
@@ -315,6 +337,85 @@ function focusPreviewBlock(event, blockId) {
   }
 
   focusBlockAt(blockId, "end");
+}
+
+function selectImageBlock(blockId) {
+  closeBlockMenu();
+  closeImageMenu();
+  selectedBlockIds.value = [blockId];
+}
+
+function openImagePreview(image) {
+  closeImageMenu();
+  previewImage.value = image;
+}
+
+function closeImagePreview() {
+  previewImage.value = null;
+}
+
+function openImageMenu(event, blockId, image) {
+  event.preventDefault();
+  event.stopPropagation();
+  selectImageBlock(blockId);
+  closeBlockMenu();
+  imageMenu.value = {
+    isOpen: true,
+    blockId,
+    image,
+    x: event.clientX,
+    y: event.clientY,
+  };
+}
+
+function closeImageMenu() {
+  imageMenu.value.isOpen = false;
+}
+
+async function copyImageLink() {
+  const url = imageMenu.value.image?.url;
+  closeImageMenu();
+
+  if (!url) {
+    return;
+  }
+
+  await navigator.clipboard?.writeText(url);
+}
+
+function editImageBlock() {
+  const blockId = imageMenu.value.blockId;
+  closeImageMenu();
+
+  if (blockId) {
+    focusBlockAt(blockId, "end");
+  }
+}
+
+function deleteImageBlock() {
+  const blockId = imageMenu.value.blockId;
+  closeImageMenu();
+
+  if (blockId) {
+    emit("delete-blocks", [blockId]);
+  }
+}
+
+function downloadImage() {
+  const image = imageMenu.value.image;
+  closeImageMenu();
+
+  if (!image?.url) {
+    return;
+  }
+
+  const link = document.createElement("a");
+  link.href = image.url;
+  link.download = image.alt || "image";
+  link.rel = "noreferrer";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
 function updateCodeBlock(blockId, text) {
@@ -533,6 +634,7 @@ function openBlockMenu(event, blockId) {
   event.preventDefault();
   event.stopPropagation();
   clearBlockSelection();
+  closeImageMenu();
   blockMenu.value = {
     isOpen: true,
     blockId,
@@ -739,6 +841,12 @@ function handleBlockDragEnd() {
 }
 
 function handleDocumentKeydown(event) {
+  if (event.key === "Escape" && previewImage.value) {
+    event.preventDefault();
+    closeImagePreview();
+    return;
+  }
+
   if (event.key !== "Backspace" || selectedBlockIds.value.length === 0) {
     return;
   }
@@ -746,7 +854,7 @@ function handleDocumentKeydown(event) {
   const target = event.target;
   if (
     target instanceof HTMLElement &&
-    target.closest(".block-action-menu, .slash-menu")
+    target.closest(".block-action-menu, .image-action-menu, .slash-menu")
   ) {
     return;
   }
@@ -760,6 +868,7 @@ function handleDocumentPointerDown(event) {
   if (!(target instanceof Element)) {
     closeSlashMenu();
     closeBlockMenu();
+    closeImageMenu();
     return;
   }
 
@@ -778,6 +887,7 @@ function handleDocumentPointerDown(event) {
     selectedBlockIds.value.length > 0 &&
     !target.closest(".block-shell") &&
     !target.closest(".block-action-menu") &&
+    !target.closest(".image-action-menu") &&
     !target.closest(".slash-menu")
   ) {
     clearBlockSelection();
@@ -789,6 +899,14 @@ function handleDocumentPointerDown(event) {
     !target.closest(".block-shell")
   ) {
     closeBlockMenu();
+  }
+
+  if (
+    imageMenu.value.isOpen &&
+    !target.closest(".image-action-menu") &&
+    !target.closest(".block-shell")
+  ) {
+    closeImageMenu();
   }
 }
 
@@ -888,7 +1006,33 @@ watch(
           @paste="handlePaste($event, block.id)"
         />
         <div
-          v-if="block.type !== 'code' && focusedBlockId !== block.id && hasMarkdownPreview(block)"
+          v-if="block.type !== 'code' && focusedBlockId !== block.id && getImageBlockToken(block)"
+          class="image-block-preview"
+          role="button"
+          tabindex="0"
+          title="双击预览图片"
+          @click.stop="selectImageBlock(block.id)"
+          @dblclick.stop="openImagePreview(getImageBlockToken(block))"
+          @contextmenu="openImageMenu($event, block.id, getImageBlockToken(block))"
+          @keydown.enter.prevent="openImagePreview(getImageBlockToken(block))"
+        >
+          <img
+            class="image-block-asset"
+            :src="getImageBlockToken(block).url"
+            :alt="getImageBlockToken(block).alt"
+            draggable="false"
+          />
+          <span v-if="getImageBlockToken(block).alt" class="image-block-caption">
+            {{ getImageBlockToken(block).alt }}
+          </span>
+        </div>
+        <div
+          v-if="
+            block.type !== 'code' &&
+            focusedBlockId !== block.id &&
+            hasMarkdownPreview(block) &&
+            !getImageBlockToken(block)
+          "
           class="markdown-block-preview"
           :class="`is-${block.type}`"
           role="button"
@@ -955,6 +1099,29 @@ watch(
         @delete="deleteMenuBlock"
       />
       <div
+        v-if="imageMenu.isOpen && imageMenu.blockId === block.id"
+        class="image-action-menu"
+        :style="{ left: `${imageMenu.x}px`, top: `${imageMenu.y}px` }"
+        role="menu"
+        @mousedown.prevent
+      >
+        <button class="image-action-menu-item" type="button" role="menuitem" @click="openImagePreview(imageMenu.image)">
+          全屏查看
+        </button>
+        <button class="image-action-menu-item" type="button" role="menuitem" @click="copyImageLink">
+          复制链接
+        </button>
+        <button class="image-action-menu-item" type="button" role="menuitem" @click="downloadImage">
+          下载
+        </button>
+        <button class="image-action-menu-item" type="button" role="menuitem" @click="editImageBlock">
+          编辑图片
+        </button>
+        <button class="image-action-menu-item is-danger" type="button" role="menuitem" @click="deleteImageBlock">
+          删除
+        </button>
+      </div>
+      <div
         v-if="slashMenu.isOpen && slashMenu.blockId === block.id"
         class="slash-menu"
         @mousedown.prevent
@@ -975,6 +1142,28 @@ watch(
           没有匹配的块类型
         </div>
       </div>
+    </div>
+    <div
+      v-if="previewImage"
+      class="image-preview-overlay"
+      role="dialog"
+      aria-modal="true"
+      @click="closeImagePreview"
+    >
+      <button
+        class="image-preview-close"
+        type="button"
+        aria-label="关闭图片预览"
+        @click.stop="closeImagePreview"
+      >
+        ×
+      </button>
+      <img
+        class="image-preview-asset"
+        :src="previewImage.url"
+        :alt="previewImage.alt"
+        @click.stop
+      />
     </div>
   </div>
 </template>

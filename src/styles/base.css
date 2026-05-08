@@ -375,6 +375,39 @@ textarea {
   color: #ff9ca3;
 }
 
+.image-action-menu {
+  position: fixed;
+  z-index: 26;
+  display: grid;
+  gap: 5px;
+  min-width: 150px;
+  padding: 6px;
+  border: 1px solid #3c3c3c;
+  border-radius: 8px;
+  background: #262626;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
+}
+
+.image-action-menu-item {
+  width: 100%;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  color: #e7e7e7;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.image-action-menu-item:hover {
+  background: #343434;
+}
+
+.image-action-menu-item.is-danger {
+  color: #ff9ca3;
+}
+
 .block-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -558,6 +591,37 @@ textarea {
   font-weight: 750;
 }
 
+.image-block-preview {
+  display: inline-grid;
+  max-width: 100%;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: default;
+  outline: 0;
+}
+
+.image-block-preview:hover,
+.image-block-preview:focus {
+  background: #202020;
+  box-shadow: inset 2px 0 0 #8a4f55;
+}
+
+.image-block-asset {
+  display: block;
+  max-width: 100%;
+  max-height: 420px;
+  border-radius: 6px;
+  object-fit: contain;
+  user-select: none;
+}
+
+.image-block-caption {
+  margin-top: 8px;
+  color: #a8a8a8;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .markdown-preview-image {
   display: block;
   max-width: 100%;
@@ -565,6 +629,45 @@ textarea {
   margin: 8px 0;
   border-radius: 6px;
   object-fit: contain;
+}
+
+.image-preview-overlay {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 48px;
+  background: rgba(10, 10, 10, 0.86);
+}
+
+.image-preview-asset {
+  max-width: min(100%, 1200px);
+  max-height: 100%;
+  border-radius: 8px;
+  object-fit: contain;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.52);
+}
+
+.image-preview-close {
+  position: fixed;
+  top: 18px;
+  right: 20px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  color: #eeeeee;
+  background: rgba(42, 42, 42, 0.9);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.image-preview-close:hover {
+  background: #3a3a3a;
 }
 
 .code-block-shell {
