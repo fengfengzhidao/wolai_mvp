@@ -694,19 +694,8 @@ function deleteSelectedBlocks() {
   clearBlockSelection();
 }
 
-function isTextSelectionTarget(target) {
-  return Boolean(
-    target instanceof Element &&
-      target.closest("input, textarea, .cm-editor, .markdown-block-preview"),
-  );
-}
-
-function handleEditorPointerDown(event) {
-  if (event.button !== 0) {
-    return;
-  }
-
-  pointerStartedInEditable.value = isTextSelectionTarget(event.target);
+function startBlockSelection(event) {
+  pointerStartedInEditable.value = false;
   pointerStart.value = {
     x: event.clientX,
     y: event.clientY,
@@ -714,6 +703,34 @@ function handleEditorPointerDown(event) {
   pointerCurrent.value = pointerStart.value;
   selectionStartPoint.value = pointerStart.value;
   isPointerSelecting.value = false;
+}
+
+function isBlockSelectionStartZone(event, target) {
+  if (event.button !== 0 || !(target instanceof Element)) {
+    return false;
+  }
+
+  if (target.closest(".block-action-menu, .image-action-menu, .slash-menu")) {
+    return false;
+  }
+
+  const editorPane = target.closest(".editor-pane");
+  const editorInner = target.closest(".editor-pane")?.querySelector(".editor-inner");
+
+  if (!editorPane || !editorInner) {
+    return false;
+  }
+
+  const paneRect = editorPane.getBoundingClientRect();
+  const innerRect = editorInner.getBoundingClientRect();
+  const gutterRight = innerRect.left - 12;
+
+  return (
+    event.clientX >= paneRect.left &&
+    event.clientX <= gutterRight &&
+    event.clientY >= paneRect.top &&
+    event.clientY <= paneRect.bottom
+  );
 }
 
 function handleDocumentPointerMove(event) {
@@ -729,7 +746,7 @@ function handleDocumentPointerMove(event) {
     y: event.clientY,
   };
 
-  if (pointerStartedInEditable.value && horizontalDelta <= 2) {
+  if (horizontalDelta <= 2) {
     isPointerSelecting.value = false;
     return;
   }
@@ -740,8 +757,11 @@ function handleDocumentPointerMove(event) {
 }
 
 function handleDocumentPointerUp(event) {
+  if (!pointerStart.value && !selectionStartPoint.value) {
+    return;
+  }
+
   const startPoint = selectionStartPoint.value;
-  const startedInTextSelection = pointerStartedInEditable.value;
   const endPoint = {
     x: event.clientX,
     y: event.clientY,
@@ -750,10 +770,8 @@ function handleDocumentPointerUp(event) {
     startPoint &&
     (Math.abs(endPoint.x - startPoint.x) > 2 ||
       Math.abs(endPoint.y - startPoint.y) > 2);
-  const isLeftToRightSelection =
-    !startedInTextSelection || (startPoint && endPoint.x - startPoint.x > 2);
   const shouldSelectBlocks =
-    movedFarEnough && startPoint && !didDropBlock.value && isLeftToRightSelection;
+    movedFarEnough && startPoint && !didDropBlock.value && endPoint.x - startPoint.x > 2;
 
   pointerCurrent.value = endPoint;
   pointerStart.value = null;
@@ -767,9 +785,7 @@ function handleDocumentPointerUp(event) {
     pointerCurrent.value = null;
     pointerStartedInEditable.value = false;
     didDropBlock.value = false;
-    isPointerSelecting.value = startedInTextSelection
-      ? false
-      : window.getSelection()?.toString().length > 0;
+    isPointerSelecting.value = false;
   }, 0);
 }
 
@@ -880,6 +896,15 @@ function handleDocumentPointerDown(event) {
     return;
   }
 
+  if (isBlockSelectionStartZone(event, target)) {
+    startBlockSelection(event);
+  } else {
+    pointerStart.value = null;
+    pointerCurrent.value = null;
+    selectionStartPoint.value = null;
+    isPointerSelecting.value = false;
+  }
+
   if (slashMenu.value.isOpen) {
     const activeBlockInput = target.closest("[data-block-id]");
     const isActiveBlock =
@@ -961,7 +986,6 @@ watch(
   <div
     class="block-editor"
     aria-label="块编辑区"
-    @pointerdown="handleEditorPointerDown"
   >
     <div
       v-if="selectionBoxStyle"
