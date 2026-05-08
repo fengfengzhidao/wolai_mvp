@@ -669,7 +669,7 @@ textarea {
   margin-top: 4px;
   padding: 0;
   border: 0;
-  color: #777777;
+  color: transparent;
   background: transparent;
   text-align: left;
   cursor: text;
@@ -678,6 +678,7 @@ textarea {
 .tail-input-trigger:hover:not(:disabled),
 .tail-input-trigger:focus-visible {
   color: #a8a8a8;
+  background: #202020;
 }
 
 .tail-input-trigger:disabled {
@@ -686,7 +687,7 @@ textarea {
 }
 
 .tail-input-plus {
-  color: #969696;
+  color: currentColor;
   font-size: 22px;
   line-height: 1;
   text-align: center;

@@ -1290,7 +1290,7 @@ watch(
       @click="activateTailInput"
     >
       <span class="tail-input-plus" aria-hidden="true">＋</span>
-      <span class="tail-input-placeholder">输入 '/' 选择块类型</span>
+      <span class="tail-input-placeholder" aria-hidden="true"></span>
     </button>
     <div
       v-if="previewImage"
