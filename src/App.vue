@@ -17,6 +17,7 @@ const {
   movePage,
   movePageToParent,
   updateActivePage,
+  updateActivePageIcon,
 } = useNotes();
 </script>
 
@@ -43,6 +44,7 @@ const {
       @select-page="selectPage"
       @create-child-page="createChildPage"
       @delete-page="deletePage"
+      @update-page-icon="updateActivePageIcon"
     />
   </main>
 </template>

@@ -35,6 +35,7 @@ function createPage(title = "未命名页面", content = "") {
     title,
     content,
     blocks: [createBlock(content)],
+    icon: null,
     parentId: null,
     order: 0,
     createdAt: now,
@@ -45,9 +46,30 @@ function createPage(title = "未命名页面", content = "") {
 function normalizePageTreeFields(page, index) {
   return {
     ...page,
+    icon: normalizePageIcon(page.icon),
     parentId: typeof page.parentId === "string" ? page.parentId : null,
     order: Number.isFinite(page.order) ? page.order : index,
   };
+}
+
+function normalizePageIcon(icon) {
+  if (icon?.type !== "calendar") {
+    return null;
+  }
+
+  return {
+    type: "calendar",
+    date: typeof icon.date === "string" ? icon.date : getTodayDateString(),
+    color: typeof icon.color === "string" ? icon.color : "#a36f92",
+  };
+}
+
+function getTodayDateString() {
+  const today = new Date();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const date = String(today.getDate()).padStart(2, "0");
+
+  return `${today.getFullYear()}-${month}-${date}`;
 }
 
 function migratePageBlocks(page) {
@@ -395,6 +417,10 @@ export function useNotes(notesRepository = localNotesRepository) {
     queueSave();
   }
 
+  function updateActivePageIcon(icon) {
+    updateActivePage({ icon: normalizePageIcon(icon) });
+  }
+
   return {
     sortedPages,
     activePage,
@@ -409,6 +435,7 @@ export function useNotes(notesRepository = localNotesRepository) {
     movePage,
     movePageToParent,
     updateActivePage,
+    updateActivePageIcon,
   };
 }
 

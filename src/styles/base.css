@@ -244,14 +244,15 @@ textarea {
 
 .page-item-main {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
+  grid-template-columns: 18px 18px minmax(0, 1fr);
   align-items: center;
   gap: 2px;
   min-width: 0;
 }
 
 .page-expand-button,
-.page-expand-spacer {
+.page-expand-spacer,
+.page-icon-spacer {
   width: 18px;
   height: 20px;
 }
@@ -503,6 +504,100 @@ textarea {
   font-size: 42px;
   font-weight: 800;
   line-height: 1.18;
+}
+
+.calendar-page-icon {
+  display: inline-grid;
+  overflow: hidden;
+  border-radius: 7px;
+  background: #f0f0f0;
+  color: #6d7c86;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+  vertical-align: middle;
+}
+
+.calendar-page-icon-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  color: #ffffff;
+  background: var(--calendar-accent);
+  font-weight: 650;
+}
+
+.calendar-page-icon-dots {
+  opacity: 0.85;
+  letter-spacing: -1px;
+}
+
+.calendar-page-icon-body {
+  display: grid;
+  place-items: center;
+  background: #f2f2f2;
+}
+
+.calendar-page-icon-day {
+  font-weight: 500;
+  line-height: 0.92;
+}
+
+.calendar-page-icon-weekday {
+  color: #6d7c86;
+  line-height: 1;
+}
+
+.calendar-page-icon.is-small {
+  width: 18px;
+  height: 20px;
+  border-radius: 4px;
+}
+
+.calendar-page-icon.is-small .calendar-page-icon-header {
+  height: 6px;
+  padding: 0 2px;
+  font-size: 0;
+}
+
+.calendar-page-icon.is-small .calendar-page-icon-dots {
+  display: none;
+}
+
+.calendar-page-icon.is-small .calendar-page-icon-body {
+  height: 14px;
+}
+
+.calendar-page-icon.is-small .calendar-page-icon-day {
+  font-size: 10px;
+}
+
+.calendar-page-icon.is-small .calendar-page-icon-weekday {
+  display: none;
+}
+
+.calendar-page-icon.is-large {
+  width: 80px;
+  height: 80px;
+  margin: 14px 0 4px;
+}
+
+.calendar-page-icon.is-large .calendar-page-icon-header {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 15px;
+}
+
+.calendar-page-icon.is-large .calendar-page-icon-body {
+  height: 56px;
+}
+
+.calendar-page-icon.is-large .calendar-page-icon-day {
+  font-size: 38px;
+}
+
+.calendar-page-icon.is-large .calendar-page-icon-weekday {
+  margin-top: 1px;
+  font-size: 11px;
 }
 
 .title-input::placeholder {

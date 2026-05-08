@@ -1,6 +1,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import BlockEditor from "./BlockEditor.vue";
+import CalendarPageIcon from "./CalendarPageIcon.vue";
 import { formatTime } from "../utils/formatTime";
 import { normalizeCodeLanguage } from "../utils/codeLanguages";
 import { exportPageAsMarkdown } from "../utils/markdownExport";
@@ -38,6 +39,7 @@ const emit = defineEmits([
   "select-page",
   "create-child-page",
   "delete-page",
+  "update-page-icon",
 ]);
 const titleInput = ref(null);
 const blockEditor = ref(null);
@@ -138,6 +140,28 @@ function requestDeletePage() {
 function requestExportMarkdown() {
   closePageMenu();
   exportPageAsMarkdown(props.page, props.pages);
+}
+
+function setTodayCalendarIcon() {
+  closePageMenu();
+  emit("update-page-icon", {
+    type: "calendar",
+    date: getTodayDateString(),
+    color: "#a36f92",
+  });
+}
+
+function removePageIcon() {
+  closePageMenu();
+  emit("update-page-icon", null);
+}
+
+function getTodayDateString() {
+  const today = new Date();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const date = String(today.getDate()).padStart(2, "0");
+
+  return `${today.getFullYear()}-${month}-${date}`;
 }
 
 function togglePageMenu() {
@@ -517,6 +541,20 @@ onBeforeUnmount(() => {
               <span class="page-options-icon">＋</span>
               <span>新建子页面</span>
             </button>
+            <button class="page-options-item" type="button" role="menuitem" @click="setTodayCalendarIcon">
+              <span class="page-options-icon">▣</span>
+              <span>设为今日日历图标</span>
+            </button>
+            <button
+              v-if="page?.icon"
+              class="page-options-item"
+              type="button"
+              role="menuitem"
+              @click="removePageIcon"
+            >
+              <span class="page-options-icon">−</span>
+              <span>移除页面图标</span>
+            </button>
             <button class="page-options-item" type="button" role="menuitem" @click="requestExportMarkdown">
               <span class="page-options-icon">⇩</span>
               <span>导出 Markdown</span>
@@ -544,6 +582,11 @@ onBeforeUnmount(() => {
       <div class="editor-meta">
         <span>{{ page ? `更新于 ${formatTime(page.updatedAt)}` : "尚未保存" }}</span>
       </div>
+      <CalendarPageIcon
+        v-if="page?.icon?.type === 'calendar'"
+        :icon="page.icon"
+        size="large"
+      />
       <input
         ref="titleInput"
         v-model="title"

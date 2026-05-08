@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from "vue";
+import CalendarPageIcon from "./CalendarPageIcon.vue";
 import { formatTime } from "../utils/formatTime";
 
 const props = defineProps({
@@ -121,6 +122,12 @@ function forwardPageDrop(event, pageId, position) {
           {{ isExpanded ? "▾" : "▸" }}
         </button>
         <span v-else class="page-expand-spacer"></span>
+        <CalendarPageIcon
+          v-if="page.icon?.type === 'calendar'"
+          :icon="page.icon"
+          size="small"
+        />
+        <span v-else class="page-icon-spacer"></span>
         <span class="page-title">{{ page.title.trim() || "未命名页面" }}</span>
       </span>
       <span class="page-time">{{ formatTime(page.updatedAt) }}</span>
