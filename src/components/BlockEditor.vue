@@ -163,6 +163,8 @@ const blockTypeMenuItems = computed(() =>
   })),
 );
 
+const lastBlock = computed(() => props.blocks.at(-1) || null);
+
 const selectionBoxStyle = computed(() => {
   if (!isPointerSelecting.value || !selectionStartPoint.value || !pointerCurrent.value) {
     return null;
@@ -361,6 +363,19 @@ function openImagePreview(image) {
 
 function closeImagePreview() {
   previewImage.value = null;
+}
+
+async function activateTailInput() {
+  if (props.disabled || !lastBlock.value) {
+    return;
+  }
+
+  if (lastBlock.value.type === "paragraph" && lastBlock.value.text.trim() === "") {
+    await focusBlockAt(lastBlock.value.id, "start");
+    return;
+  }
+
+  emit("insert-block-after", lastBlock.value.id);
 }
 
 function openImageMenu(event, blockId, image) {
@@ -1267,6 +1282,16 @@ watch(
         </div>
       </div>
     </div>
+    <button
+      v-if="lastBlock"
+      class="tail-input-trigger"
+      type="button"
+      :disabled="disabled"
+      @click="activateTailInput"
+    >
+      <span class="tail-input-plus" aria-hidden="true">＋</span>
+      <span class="tail-input-placeholder">输入 '/' 选择块类型</span>
+    </button>
     <div
       v-if="previewImage"
       class="image-preview-overlay"
