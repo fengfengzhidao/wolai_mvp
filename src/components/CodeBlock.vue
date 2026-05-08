@@ -237,17 +237,17 @@ watch(
 const codeBlockTheme = EditorView.theme(
   {
     "&": {
-      backgroundColor: "#111111",
+      backgroundColor: "transparent",
       color: "#eeeeee",
-      fontSize: "14px",
-      minHeight: "124px",
+      fontSize: "16px",
+      minHeight: "156px",
     },
     ".cm-content": {
       caretColor: "#f4d6da",
       fontFamily:
         '"Cascadia Code", "Fira Code", Consolas, "Liberation Mono", monospace',
       lineHeight: "1.65",
-      padding: "12px 14px",
+      padding: "34px 28px 28px",
     },
     ".cm-focused": {
       outline: "none",
@@ -260,6 +260,9 @@ const codeBlockTheme = EditorView.theme(
         '"Cascadia Code", "Fira Code", Consolas, "Liberation Mono", monospace',
       overflowX: "hidden",
     },
+    ".cm-editor": {
+      backgroundColor: "transparent",
+    },
     ".cm-gutters": {
       display: "none",
     },
@@ -268,6 +271,28 @@ const codeBlockTheme = EditorView.theme(
     },
     ".cm-selectionBackground": {
       backgroundColor: "rgba(138, 79, 85, 0.5) !important",
+    },
+    ".tok-keyword": {
+      color: "#ff79c6",
+    },
+    ".tok-variableName": {
+      color: "#f2f2f2",
+    },
+    ".tok-function, .tok-className, .tok-propertyName": {
+      color: "#4df276",
+    },
+    ".tok-string": {
+      color: "#f1ff8f",
+    },
+    ".tok-number, .tok-bool": {
+      color: "#8be9fd",
+    },
+    ".tok-operator, .tok-punctuation": {
+      color: "#e8e8e8",
+    },
+    ".tok-comment": {
+      color: "#7f879d",
+      fontStyle: "italic",
     },
   },
   { dark: true },

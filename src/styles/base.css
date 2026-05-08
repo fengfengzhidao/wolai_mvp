@@ -673,33 +673,50 @@ textarea {
 .code-block-shell {
   position: relative;
   overflow: visible;
-  border: 1px solid #303030;
-  border-radius: 6px;
-  background: #111111;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: #272a36;
 }
 
 .code-block-toolbar {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  right: 14px;
   display: flex;
-  justify-content: flex-end;
   gap: 6px;
-  padding: 8px 8px 0;
 }
 
 .code-language-button,
 .code-copy-button {
-  height: 28px;
-  padding: 0 9px;
+  height: 26px;
+  padding: 0 8px;
   border: 0;
   border-radius: 5px;
-  color: #cfcfcf;
+  color: #d7d8de;
   background: transparent;
   cursor: pointer;
+}
+
+.code-language-button {
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.code-copy-button {
+  opacity: 0;
+  font-size: 13px;
+}
+
+.code-block-shell:hover .code-copy-button,
+.code-block-shell:focus-within .code-copy-button {
+  opacity: 1;
 }
 
 .code-language-button:hover,
 .code-copy-button:hover {
   color: #ffffff;
-  background: #292929;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .code-language-menu {
@@ -752,12 +769,12 @@ textarea {
 }
 
 .code-editor-root {
-  min-height: 124px;
+  min-height: 156px;
 }
 
 .code-block-shell:focus-within {
-  border-color: #574044;
-  box-shadow: inset 2px 0 0 #8a4f55;
+  border-color: rgba(214, 160, 165, 0.3);
+  box-shadow: 0 0 0 1px rgba(214, 160, 165, 0.12);
 }
 
 .block-row.is-todo:has(.todo-checkbox:checked) .text-block {
