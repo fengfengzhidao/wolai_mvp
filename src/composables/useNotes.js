@@ -226,6 +226,33 @@ export function useNotes(notesRepository = defaultNotesRepository, options = {})
     createNewPage(parentId);
   }
 
+  function openTodayQuickNote() {
+    const today = getTodayDateString();
+    const quickNoteTitle = `今日速记 ${today}`;
+    const existingPage = pages.value.find(
+      (page) =>
+        page.title === quickNoteTitle ||
+        (page.icon?.type === "calendar" && page.icon.date === today && page.title === "今日速记"),
+    );
+
+    if (existingPage) {
+      activePageId.value = existingPage.id;
+      persistImmediately();
+      return;
+    }
+
+    const newPage = createPage(quickNoteTitle);
+    newPage.icon = {
+      type: "calendar",
+      date: today,
+      color: "#a36f92",
+    };
+    newPage.order = getFirstOrder(null) - 1;
+    pages.value = [newPage, ...pages.value];
+    activePageId.value = newPage.id;
+    persistImmediately();
+  }
+
   function createSiblingPageAfter(targetPageId) {
     const targetPage = pages.value.find((page) => page.id === targetPageId);
 
@@ -464,6 +491,7 @@ export function useNotes(notesRepository = defaultNotesRepository, options = {})
     reloadNotes: initializeNotes,
     createNewPage,
     createChildPage,
+    openTodayQuickNote,
     createSiblingPageAfter,
     selectPage,
     deletePage,

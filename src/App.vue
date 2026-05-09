@@ -17,6 +17,7 @@ const {
   reloadNotes,
   createNewPage,
   createChildPage,
+  openTodayQuickNote,
   createSiblingPageAfter,
   selectPage,
   deletePage,
@@ -88,6 +89,7 @@ async function logout() {
       :active-page-id="activePage?.id || null"
       :user="currentUser"
       @create-page="createNewPage"
+      @open-today-quick-note="openTodayQuickNote"
       @create-child-page="createChildPage"
       @create-sibling-page-after="createSiblingPageAfter"
       @select-page="selectPage"

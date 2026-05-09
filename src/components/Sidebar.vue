@@ -29,8 +29,11 @@ const emit = defineEmits([
   "duplicate-page",
   "move-page",
   "move-page-to-parent",
+  "open-today-quick-note",
   "logout",
 ]);
+const searchQuery = ref("");
+const isSettingsOpen = ref(false);
 const contextMenu = ref({
   isOpen: false,
   pageId: null,
@@ -43,7 +46,36 @@ const dragState = ref({
 });
 const expandedPageIds = ref(getInitialExpandedPageIds(props.pages));
 
-const pageTree = computed(() => buildPageTree(props.pages));
+const filteredPages = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase();
+
+  if (!query) {
+    return props.pages;
+  }
+
+  const pageById = new Map(props.pages.map((page) => [page.id, page]));
+  const matchedPageIds = new Set();
+
+  props.pages.forEach((page) => {
+    const title = (page.title || "未命名页面").toLowerCase();
+    const content = (page.content || "").toLowerCase();
+
+    if (!title.includes(query) && !content.includes(query)) {
+      return;
+    }
+
+    matchedPageIds.add(page.id);
+    let currentPage = page.parentId ? pageById.get(page.parentId) : null;
+    while (currentPage) {
+      matchedPageIds.add(currentPage.id);
+      currentPage = currentPage.parentId ? pageById.get(currentPage.parentId) : null;
+    }
+  });
+
+  return props.pages.filter((page) => matchedPageIds.has(page.id));
+});
+const pageTree = computed(() => buildPageTree(filteredPages.value));
+const hasSearchQuery = computed(() => searchQuery.value.trim().length > 0);
 const currentMenuPage = computed(() =>
   props.pages.find((page) => page.id === contextMenu.value.pageId) || null,
 );
@@ -143,6 +175,24 @@ function openContextMenu(event, pageId) {
 
 function closeContextMenu() {
   contextMenu.value.isOpen = false;
+}
+
+function toggleSettings(event) {
+  event.stopPropagation();
+  isSettingsOpen.value = !isSettingsOpen.value;
+
+  if (isSettingsOpen.value) {
+    window.addEventListener("click", closeSettings, { once: true });
+  }
+}
+
+function closeSettings() {
+  isSettingsOpen.value = false;
+}
+
+function requestTodayQuickNote() {
+  searchQuery.value = "";
+  emit("open-today-quick-note");
 }
 
 function requestDeletePage() {
@@ -290,6 +340,7 @@ function clearPageDrag() {
 
 onBeforeUnmount(() => {
   window.removeEventListener("click", closeContextMenu);
+  window.removeEventListener("click", closeSettings);
 });
 
 watch(
@@ -322,6 +373,36 @@ watch(
       </div>
     </header>
 
+    <section class="sidebar-actions" aria-label="操作区域">
+      <p class="section-title">操作</p>
+      <label class="sidebar-search">
+        <span class="sidebar-action-icon" aria-hidden="true">⌕</span>
+        <input
+          v-model="searchQuery"
+          type="search"
+          placeholder="搜索页面"
+          autocomplete="off"
+        />
+      </label>
+      <button class="sidebar-action-button" type="button" @click="requestTodayQuickNote">
+        <span class="sidebar-action-icon" aria-hidden="true">▣</span>
+        <span>今日速记</span>
+      </button>
+      <div class="settings-action-wrap">
+        <button class="sidebar-action-button" type="button" @click="toggleSettings">
+          <span class="sidebar-action-icon" aria-hidden="true">⚙</span>
+          <span>个人设置</span>
+        </button>
+        <div v-if="isSettingsOpen" class="settings-popover" @click.stop>
+          <p class="settings-label">当前账号</p>
+          <p class="settings-username">{{ user?.username || "未登录" }}</p>
+          <button class="settings-logout" type="button" @click="$emit('logout')">
+            退出登录
+          </button>
+        </div>
+      </div>
+    </section>
+
     <section class="page-list-panel" aria-label="页面列表">
       <p class="section-title">页面</p>
       <div class="page-list">
@@ -343,6 +424,9 @@ watch(
         />
       </div>
       <p v-if="pages.length === 0" class="empty-list is-visible">还没有页面</p>
+      <p v-else-if="hasSearchQuery && filteredPages.length === 0" class="empty-list is-visible">
+        没有匹配的页面
+      </p>
     </section>
 
     <div
