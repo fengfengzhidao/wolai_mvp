@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import PageTreeNode from "./PageTreeNode.vue";
 
 const EXPANDED_PAGE_IDS_KEY = "wolai_mvp_expanded_page_ids";
@@ -33,7 +33,9 @@ const emit = defineEmits([
   "logout",
 ]);
 const searchQuery = ref("");
+const isSearchOpen = ref(false);
 const isSettingsOpen = ref(false);
+const searchInput = ref(null);
 const contextMenu = ref({
   isOpen: false,
   pageId: null,
@@ -177,11 +179,31 @@ function closeContextMenu() {
   contextMenu.value.isOpen = false;
 }
 
+async function toggleSearch(event) {
+  event.stopPropagation();
+  isSearchOpen.value = !isSearchOpen.value;
+
+  if (isSearchOpen.value) {
+    closeSettings();
+    window.addEventListener("click", closeSearch, { once: true });
+    await nextTick();
+    searchInput.value?.focus();
+    return;
+  }
+
+  searchQuery.value = "";
+}
+
+function closeSearch() {
+  isSearchOpen.value = false;
+}
+
 function toggleSettings(event) {
   event.stopPropagation();
   isSettingsOpen.value = !isSettingsOpen.value;
 
   if (isSettingsOpen.value) {
+    closeSearch();
     window.addEventListener("click", closeSettings, { once: true });
   }
 }
@@ -192,6 +214,8 @@ function closeSettings() {
 
 function requestTodayQuickNote() {
   searchQuery.value = "";
+  closeSearch();
+  closeSettings();
   emit("open-today-quick-note");
 }
 
@@ -340,6 +364,7 @@ function clearPageDrag() {
 
 onBeforeUnmount(() => {
   window.removeEventListener("click", closeContextMenu);
+  window.removeEventListener("click", closeSearch);
   window.removeEventListener("click", closeSettings);
 });
 
@@ -374,24 +399,35 @@ watch(
     </header>
 
     <section class="sidebar-actions" aria-label="操作区域">
-      <p class="section-title">操作</p>
-      <label class="sidebar-search">
-        <span class="sidebar-action-icon" aria-hidden="true">⌕</span>
-        <input
-          v-model="searchQuery"
-          type="search"
-          placeholder="搜索页面"
-          autocomplete="off"
-        />
-      </label>
-      <button class="sidebar-action-button" type="button" @click="requestTodayQuickNote">
-        <span class="sidebar-action-icon" aria-hidden="true">▣</span>
-        <span>今日速记</span>
+      <button
+        class="sidebar-icon-button"
+        :class="{ 'is-active': isSearchOpen || hasSearchQuery }"
+        type="button"
+        title="搜索"
+        aria-label="搜索"
+        @click="toggleSearch"
+      >
+        ⌕
+      </button>
+      <button
+        class="sidebar-icon-button"
+        type="button"
+        title="今日速记"
+        aria-label="今日速记"
+        @click="requestTodayQuickNote"
+      >
+        ⇄
       </button>
       <div class="settings-action-wrap">
-        <button class="sidebar-action-button" type="button" @click="toggleSettings">
-          <span class="sidebar-action-icon" aria-hidden="true">⚙</span>
-          <span>个人设置</span>
+        <button
+          class="sidebar-icon-button"
+          :class="{ 'is-active': isSettingsOpen }"
+          type="button"
+          title="个人设置"
+          aria-label="个人设置"
+          @click="toggleSettings"
+        >
+          ...
         </button>
         <div v-if="isSettingsOpen" class="settings-popover" @click.stop>
           <p class="settings-label">当前账号</p>
@@ -400,6 +436,18 @@ watch(
             退出登录
           </button>
         </div>
+      </div>
+      <div v-if="isSearchOpen" class="sidebar-search-popover" @click.stop>
+        <label class="sidebar-search">
+          <span class="sidebar-search-icon" aria-hidden="true">⌕</span>
+          <input
+            ref="searchInput"
+            v-model="searchQuery"
+            type="search"
+            placeholder="搜索页面"
+            autocomplete="off"
+          />
+        </label>
       </div>
     </section>
 
