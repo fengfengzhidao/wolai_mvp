@@ -388,17 +388,20 @@ watch(
         <h1>wolai_mvp</h1>
         <p v-if="user" class="sidebar-user">{{ user.username }}</p>
       </div>
-      <div class="sidebar-header-actions">
-        <button class="new-page-button" type="button" @click="$emit('create-page')">
-          新建
-        </button>
-        <button class="logout-button" type="button" title="退出登录" @click="$emit('logout')">
-          退出
-        </button>
-      </div>
     </header>
 
     <section class="sidebar-actions" aria-label="操作区域">
+      <button
+        class="sidebar-icon-button"
+        type="button"
+        title="新建页面"
+        aria-label="新建页面"
+        @click="$emit('create-page')"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      </button>
       <button
         class="sidebar-icon-button"
         :class="{ 'is-active': isSearchOpen || hasSearchQuery }"
@@ -407,7 +410,10 @@ watch(
         aria-label="搜索"
         @click="toggleSearch"
       >
-        ⌕
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="6.5" />
+          <path d="m16 16 4 4" />
+        </svg>
       </button>
       <button
         class="sidebar-icon-button"
@@ -416,7 +422,9 @@ watch(
         aria-label="今日速记"
         @click="requestTodayQuickNote"
       >
-        ⇄
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M13 2 4 14h7l-1 8 10-13h-7l1-7Z" />
+        </svg>
       </button>
       <div class="settings-action-wrap">
         <button
@@ -427,7 +435,11 @@ watch(
           aria-label="个人设置"
           @click="toggleSettings"
         >
-          ...
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="5" cy="12" r="1.5" />
+            <circle cx="12" cy="12" r="1.5" />
+            <circle cx="19" cy="12" r="1.5" />
+          </svg>
         </button>
         <div v-if="isSettingsOpen" class="settings-popover" @click.stop>
           <p class="settings-label">当前账号</p>
@@ -439,7 +451,12 @@ watch(
       </div>
       <div v-if="isSearchOpen" class="sidebar-search-popover" @click.stop>
         <label class="sidebar-search">
-          <span class="sidebar-search-icon" aria-hidden="true">⌕</span>
+          <span class="sidebar-search-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="6.5" />
+              <path d="m16 16 4 4" />
+            </svg>
+          </span>
           <input
             ref="searchInput"
             v-model="searchQuery"

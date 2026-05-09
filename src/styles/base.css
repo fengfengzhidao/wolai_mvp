@@ -77,22 +77,6 @@ textarea {
   font-size: 13px;
 }
 
-.sidebar-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.new-page-button {
-  height: 32px;
-  padding: 0 12px;
-  border: 1px solid #444444;
-  border-radius: 6px;
-  color: #f1f1f1;
-  background: #303030;
-  cursor: pointer;
-}
-
 .page-list-panel {
   flex: 1;
   min-height: 0;
@@ -474,28 +458,14 @@ textarea {
   cursor: pointer;
 }
 
-.logout-button {
-  height: 32px;
-  padding: 0 10px;
-  border: 1px solid #3a3a3a;
-  border-radius: 6px;
-  color: #cfcfcf;
-  background: transparent;
-  cursor: pointer;
-}
-
-.logout-button:hover {
-  color: #ffffff;
-  background: #303030;
-}
-
 .sidebar-actions {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 14px;
+  justify-content: space-between;
+  gap: 10px;
   min-height: 46px;
-  padding: 8px 14px;
+  padding: 8px 16px;
   border-bottom: 1px solid #303030;
 }
 
@@ -509,9 +479,24 @@ textarea {
   border-radius: 6px;
   color: #b8b8b8;
   background: transparent;
-  font-size: 20px;
   line-height: 1;
   cursor: pointer;
+}
+
+.sidebar-icon-button svg,
+.sidebar-search-icon svg {
+  width: 19px;
+  height: 19px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.sidebar-icon-button circle,
+.sidebar-search-icon circle {
+  fill: none;
 }
 
 .sidebar-icon-button:hover,
