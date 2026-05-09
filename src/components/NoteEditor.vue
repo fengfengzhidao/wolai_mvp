@@ -194,8 +194,7 @@ function requestExportMarkdown() {
   exportPageAsMarkdown(props.page, props.pages);
 }
 
-function setTodayCalendarIcon() {
-  closePageMenu();
+function addPageIcon() {
   closeCalendarPicker();
   emit("update-page-icon", {
     type: "calendar",
@@ -717,32 +716,6 @@ onBeforeUnmount(() => {
               </span>
               <span>新建子页面</span>
             </button>
-            <button class="page-options-item" type="button" role="menuitem" @click="setTodayCalendarIcon">
-              <span class="page-options-icon">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <rect x="5" y="5" width="14" height="14" rx="2" />
-                  <path d="M8 9h8M9 13h2M13 13h2" />
-                </svg>
-              </span>
-              <span>设为今日日历图标</span>
-            </button>
-            <div class="page-icon-color-panel" role="group" aria-label="选择日历图标颜色">
-              <button
-                v-for="color in CALENDAR_ICON_COLORS"
-                :key="color.value"
-                class="icon-color-swatch"
-                :class="{ 'is-selected': activeCalendarColor === color.value }"
-                type="button"
-                :title="color.label"
-                :aria-label="`选择${color.label}`"
-                :style="{ '--icon-color': color.value }"
-                @click="setCalendarIconColor(color.value)"
-              >
-                <svg v-if="activeCalendarColor === color.value" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="m6 12 4 4 8-8" />
-                </svg>
-              </button>
-            </div>
             <button
               v-if="page?.icon"
               class="page-options-item"
@@ -791,6 +764,15 @@ onBeforeUnmount(() => {
     <div class="editor-inner">
       <div class="editor-meta">
         <span>{{ page ? `更新于 ${formatTime(page.updatedAt)}` : "尚未保存" }}</span>
+      </div>
+      <div v-if="page && !page.icon" class="title-empty-icon-actions">
+        <button class="title-empty-icon-button" type="button" @click="addPageIcon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M9 10h.01M15 10h.01M8.5 14.5c1.8 1.7 5.2 1.7 7 0" />
+          </svg>
+          <span>添加图标</span>
+        </button>
       </div>
       <div v-if="page?.icon?.type === 'calendar'" class="title-calendar-icon-wrap">
         <button

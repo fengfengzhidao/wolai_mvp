@@ -735,15 +735,10 @@ textarea {
   fill: none;
 }
 
-.page-icon-color-panel,
 .calendar-color-row {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   gap: 10px;
-}
-
-.page-icon-color-panel {
-  padding: 8px 16px 10px;
 }
 
 .calendar-color-row {
@@ -841,6 +836,49 @@ textarea {
   font-size: 42px;
   font-weight: 800;
   line-height: 1.18;
+}
+
+.title-empty-icon-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 28px;
+  margin-top: 14px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.editor-inner:hover .title-empty-icon-actions,
+.title-empty-icon-actions:focus-within {
+  opacity: 1;
+}
+
+.title-empty-icon-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  color: #858585;
+  background: transparent;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.title-empty-icon-button:hover,
+.title-empty-icon-button:focus-visible {
+  color: #d8d8d8;
+}
+
+.title-empty-icon-button svg {
+  width: 19px;
+  height: 19px;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
 }
 
 .calendar-page-icon {
