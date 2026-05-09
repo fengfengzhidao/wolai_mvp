@@ -24,7 +24,6 @@ const {
   renamePage,
   duplicatePage,
   movePage,
-  movePageToParent,
   updateActivePage,
   updateActivePageIcon,
 } = useNotes(undefined, { autoInitialize: false });
@@ -100,7 +99,6 @@ async function logout() {
         @rename-page="renamePage"
         @duplicate-page="duplicatePage"
         @move-page="movePage"
-        @move-page-to-parent="movePageToParent"
         @logout="logout"
       />
       <NoteEditor

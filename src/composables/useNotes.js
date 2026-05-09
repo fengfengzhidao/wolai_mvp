@@ -438,32 +438,6 @@ export function useNotes(notesRepository = defaultNotesRepository, options = {})
     persistImmediately();
   }
 
-  function movePageToParent(pageId, parentId = null) {
-    if (pageId === parentId || (parentId && isDescendantPage(parentId, pageId))) {
-      return;
-    }
-
-    const normalizedParentId = pages.value.some((page) => page.id === parentId)
-      ? parentId
-      : null;
-    const siblingCount = pages.value.filter(
-      (page) => page.id !== pageId && (page.parentId || null) === normalizedParentId,
-    ).length;
-
-    pages.value = pages.value.map((page) =>
-      page.id === pageId
-        ? {
-            ...page,
-            parentId: normalizedParentId,
-            order: siblingCount,
-            updatedAt: Date.now(),
-          }
-        : page,
-    );
-
-    persistImmediately();
-  }
-
   function updateActivePage(changes) {
     pages.value = pages.value.map((page) => {
       if (page.id !== activePageId.value) {
@@ -498,7 +472,6 @@ export function useNotes(notesRepository = defaultNotesRepository, options = {})
     renamePage,
     duplicatePage,
     movePage,
-    movePageToParent,
     updateActivePage,
     updateActivePageIcon,
   };

@@ -28,7 +28,6 @@ const emit = defineEmits([
   "rename-page",
   "duplicate-page",
   "move-page",
-  "move-page-to-parent",
   "open-today-quick-note",
   "logout",
 ]);
@@ -80,12 +79,6 @@ const pageTree = computed(() => buildPageTree(filteredPages.value));
 const hasSearchQuery = computed(() => searchQuery.value.trim().length > 0);
 const currentMenuPage = computed(() =>
   props.pages.find((page) => page.id === contextMenu.value.pageId) || null,
-);
-const moveTargetPages = computed(() =>
-  props.pages
-    .filter((page) => page.id !== contextMenu.value.pageId)
-    .filter((page) => !isDescendantPage(page.id, contextMenu.value.pageId))
-    .sort((a, b) => a.title.localeCompare(b.title, "zh-Hans-CN")),
 );
 
 function buildPageTree(pages) {
@@ -275,22 +268,6 @@ function requestDuplicatePage() {
 
   if (pageId) {
     emit("duplicate-page", pageId);
-  }
-}
-
-function requestMoveToParent(parentId) {
-  const pageId = contextMenu.value.pageId;
-  closeContextMenu();
-
-  if (!pageId) {
-    return;
-  }
-
-  emit("move-page-to-parent", pageId, parentId);
-
-  if (parentId) {
-    expandedPageIds.value = new Set([...expandedPageIds.value, parentId]);
-    persistExpandedPageIds();
   }
 }
 
@@ -512,35 +489,6 @@ watch(
       <button class="context-menu-item" type="button" @click="requestDuplicatePage">
         复制页面
       </button>
-      <div class="context-menu-submenu">
-        <button
-          class="context-menu-item context-menu-submenu-trigger"
-          type="button"
-          aria-haspopup="menu"
-        >
-          移动到
-        </button>
-        <div class="context-menu-submenu-content" role="menu">
-          <button
-            class="context-menu-item"
-            type="button"
-            role="menuitem"
-            @click="requestMoveToParent(null)"
-          >
-            根目录
-          </button>
-          <button
-            v-for="page in moveTargetPages"
-            :key="page.id"
-            class="context-menu-item"
-            type="button"
-            role="menuitem"
-            @click="requestMoveToParent(page.id)"
-          >
-            {{ page.title.trim() || "未命名页面" }}
-          </button>
-        </div>
-      </div>
       <button class="context-menu-item is-danger" type="button" @click="requestDeletePage">
         删除页面
       </button>
