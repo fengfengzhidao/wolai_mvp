@@ -23,6 +23,10 @@ body {
   background: #8a4f55;
 }
 
+.app-root {
+  min-height: 100vh;
+}
+
 button,
 input,
 textarea {

@@ -73,43 +73,46 @@ async function logout() {
 </script>
 
 <template>
-  <main v-if="authStatus === 'checking'" class="auth-shell">
-    <section class="auth-panel">
-      <p class="auth-kicker">个人笔记工作台</p>
-      <h1>正在进入...</h1>
-    </section>
-  </main>
-  <AuthView
-    v-else-if="!currentUser"
-    @login="login"
-    @register="register"
-  />
-  <main v-else :key="workspaceKey" class="app-shell">
-    <Sidebar
-      :pages="sortedPages"
-      :active-page-id="activePage?.id || null"
-      :user="currentUser"
-      @create-page="createNewPage"
-      @open-today-quick-note="openTodayQuickNote"
-      @create-child-page="createChildPage"
-      @create-sibling-page-after="createSiblingPageAfter"
-      @select-page="selectPage"
-      @delete-page="deletePage"
-      @rename-page="renamePage"
-      @duplicate-page="duplicatePage"
-      @move-page="movePage"
-      @move-page-to-parent="movePageToParent"
-      @logout="logout"
+  <div class="app-root">
+    <main v-if="authStatus === 'checking'" key="checking" class="auth-shell">
+      <section class="auth-panel">
+        <p class="auth-kicker">个人笔记工作台</p>
+        <h1>正在进入...</h1>
+      </section>
+    </main>
+    <AuthView
+      v-else-if="!currentUser"
+      key="auth"
+      @login="login"
+      @register="register"
     />
-    <NoteEditor
-      :page="activePage"
-      :pages="sortedPages"
-      :save-status="saveStatus"
-      @update-page="updateActivePage"
-      @select-page="selectPage"
-      @create-child-page="createChildPage"
-      @delete-page="deletePage"
-      @update-page-icon="updateActivePageIcon"
-    />
-  </main>
+    <main v-else :key="`workspace-${workspaceKey}`" class="app-shell">
+      <Sidebar
+        :pages="sortedPages"
+        :active-page-id="activePage?.id || null"
+        :user="currentUser"
+        @create-page="createNewPage"
+        @open-today-quick-note="openTodayQuickNote"
+        @create-child-page="createChildPage"
+        @create-sibling-page-after="createSiblingPageAfter"
+        @select-page="selectPage"
+        @delete-page="deletePage"
+        @rename-page="renamePage"
+        @duplicate-page="duplicatePage"
+        @move-page="movePage"
+        @move-page-to-parent="movePageToParent"
+        @logout="logout"
+      />
+      <NoteEditor
+        :page="activePage"
+        :pages="sortedPages"
+        :save-status="saveStatus"
+        @update-page="updateActivePage"
+        @select-page="selectPage"
+        @create-child-page="createChildPage"
+        @delete-page="deletePage"
+        @update-page-icon="updateActivePageIcon"
+      />
+    </main>
+  </div>
 </template>
