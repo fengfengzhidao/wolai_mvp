@@ -181,7 +181,7 @@ textarea {
 .context-menu {
   position: fixed;
   z-index: 20;
-  min-width: 150px;
+  width: 168px;
   padding: 6px;
   border: 1px solid #3c3c3c;
   border-radius: 8px;
@@ -223,11 +223,14 @@ textarea {
   width: 100%;
   min-height: 34px;
   padding: 0 10px;
+  overflow: hidden;
   border: 0;
   border-radius: 6px;
   color: #e7e7e7;
   background: transparent;
   text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   cursor: pointer;
 }
 
