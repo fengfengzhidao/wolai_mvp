@@ -214,6 +214,23 @@ function changeCalendarDate(event) {
   closeCalendarPicker();
 }
 
+async function insertBlockAfterTitle() {
+  if (!props.page) {
+    return;
+  }
+
+  const insertedBlock = createBlock("paragraph", "");
+  const blocks = [insertedBlock, ...(props.page.blocks || [])];
+
+  emit("update-page", {
+    blocks,
+    content: getContentFromBlocks(blocks),
+  });
+
+  await nextTick();
+  blockEditor.value?.focusBlock(insertedBlock.id);
+}
+
 function changeBlockLanguage(blockId, language) {
   const blocks = updateBlockLanguage(props.page?.blocks || [], blockId, language);
 
@@ -651,6 +668,7 @@ onBeforeUnmount(() => {
         placeholder="未命名页面"
         autocomplete="off"
         :disabled="!page"
+        @keydown.enter.prevent="insertBlockAfterTitle"
       />
       <BlockEditor
         ref="blockEditor"
