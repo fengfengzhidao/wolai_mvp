@@ -1,13 +1,20 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+const REQUEST_TIMEOUT = 8000;
 
 async function requestJson(path, options = {}) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     credentials: "include",
+    signal: controller.signal,
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),
     },
     ...options,
+  }).finally(() => {
+    window.clearTimeout(timeoutId);
   });
 
   if (!response.ok) {

@@ -32,13 +32,14 @@ const {
 onMounted(async () => {
   try {
     currentUser.value = await authRepository.getCurrentUser();
-    if (currentUser.value) {
-      await reloadNotes();
-    }
   } catch {
     currentUser.value = null;
   } finally {
     authStatus.value = "ready";
+  }
+
+  if (currentUser.value) {
+    await reloadNotes();
   }
 });
 
