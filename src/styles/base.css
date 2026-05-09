@@ -897,32 +897,210 @@ textarea {
 
 .calendar-date-popover {
   position: absolute;
-  top: calc(100% + 10px);
-  left: 0;
+  top: 14px;
+  left: calc(100% + 12px);
   z-index: 18;
   display: grid;
-  gap: 8px;
-  min-width: 210px;
+  width: 324px;
+  max-height: calc(100vh - 32px);
+  overflow: auto;
   padding: 12px;
-  border: 1px solid #3a3a3a;
-  border-radius: 7px;
-  background: #252525;
+  border: 1px solid #343434;
+  border-radius: 8px;
+  background: #242424;
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.42);
 }
 
-.calendar-date-label {
-  color: #a8a8a8;
+.calendar-picker-head,
+.calendar-picker-toolbar,
+.calendar-picker-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.calendar-picker-head {
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #373737;
+}
+
+.calendar-picker-date {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 6px;
+  color: #e7e7e7;
+  font-size: 17px;
+}
+
+.calendar-picker-date svg,
+.calendar-region-button svg,
+.calendar-month-button svg,
+.calendar-nav-button svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.calendar-region-button,
+.calendar-month-button,
+.calendar-today-button,
+.calendar-nav-button,
+.calendar-cancel-button,
+.calendar-confirm-button,
+.calendar-day-button {
+  border: 0;
+  color: #e6e6e6;
+  font: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.calendar-region-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 5px;
+  background: #333333;
+  font-size: 16px;
+}
+
+.calendar-picker-toolbar {
+  padding: 18px 0 10px;
+}
+
+.calendar-month-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.calendar-picker-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.calendar-today-button,
+.calendar-nav-button {
+  height: 32px;
+  border: 1px solid #474747;
+  border-radius: 5px;
+  color: #d9d9d9;
+  background: #2c2c2c;
+}
+
+.calendar-today-button {
+  padding: 0 14px;
   font-size: 13px;
 }
 
-.calendar-date-input {
-  height: 34px;
-  padding: 0 10px;
-  border: 1px solid #444444;
+.calendar-nav-button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+}
+
+.calendar-region-button:hover,
+.calendar-today-button:hover,
+.calendar-nav-button:hover,
+.calendar-cancel-button:hover,
+.calendar-day-button:hover {
+  background: #383838;
+}
+
+.calendar-weekdays,
+.calendar-day-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.calendar-weekdays {
+  color: #a5a5a5;
+  font-size: 15px;
+  text-align: center;
+}
+
+.calendar-weekdays span {
+  padding: 8px 0;
+}
+
+.calendar-day-grid {
+  padding-bottom: 12px;
+}
+
+.calendar-day-button {
+  display: grid;
+  place-items: center;
+  height: 35px;
   border-radius: 5px;
-  color: #f0f0f0;
-  background: #1f1f1f;
-  font-size: 14px;
+  color: #e2e2e2;
+  font-size: 18px;
+}
+
+.calendar-day-button.is-muted {
+  color: #858f90;
+}
+
+.calendar-day-button.is-today:not(.is-selected) {
+  color: #ffffff;
+  background: rgba(213, 91, 99, 0.18);
+}
+
+.calendar-day-button.is-selected {
+  color: #ff727c;
+  box-shadow: inset 0 0 0 2px #d65b63;
+  background: rgba(213, 91, 99, 0.08);
+}
+
+.calendar-picker-footer {
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #373737;
+}
+
+.calendar-cancel-button,
+.calendar-confirm-button {
+  flex: 1;
+  height: 38px;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.calendar-cancel-button {
+  border: 1px solid #494949;
+  background: #252525;
+}
+
+.calendar-confirm-button {
+  background: #d65b63;
+  color: #ffffff;
+  font-weight: 650;
+}
+
+.calendar-confirm-button:hover {
+  background: #e0626b;
+}
+
+@media (max-width: 720px) {
+  .calendar-date-popover {
+    position: fixed;
+    top: 118px;
+    left: 16px;
+    width: min(324px, calc(100vw - 40px));
+    max-height: calc(100vh - 136px);
+  }
 }
 
 .title-input::placeholder {

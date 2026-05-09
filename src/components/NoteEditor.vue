@@ -45,6 +45,8 @@ const titleInput = ref(null);
 const blockEditor = ref(null);
 const isPageMenuOpen = ref(false);
 const isCalendarPickerOpen = ref(false);
+const calendarDraftDate = ref(getTodayDateString());
+const calendarViewDate = ref(getMonthStart(new Date()));
 
 const title = computed({
   get() {
@@ -83,6 +85,38 @@ const pageStats = computed(() => {
     blockCount: blocks.length,
     characterCount: Array.from(text.replace(/\s/g, "")).length,
   };
+});
+
+const calendarSelectedDateLabel = computed(() => formatDateLabel(calendarDraftDate.value));
+
+const calendarMonthLabel = computed(() => {
+  const date = calendarViewDate.value;
+
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+});
+
+const calendarDays = computed(() => {
+  const viewDate = calendarViewDate.value;
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const startOffset = (firstDay.getDay() + 6) % 7;
+  const startDate = new Date(year, month, 1 - startOffset);
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + index);
+    const dateString = toDateString(date);
+
+    return {
+      key: dateString,
+      date: dateString,
+      day: date.getDate(),
+      isCurrentMonth: date.getMonth() === month,
+      isSelected: dateString === calendarDraftDate.value,
+      isToday: dateString === getTodayDateString(),
+    };
+  });
 });
 
 watch(
@@ -192,6 +226,9 @@ function toggleCalendarPicker() {
   isCalendarPickerOpen.value = !isCalendarPickerOpen.value;
 
   if (isCalendarPickerOpen.value) {
+    const iconDate = parseLocalDate(props.page.icon.date);
+    calendarDraftDate.value = toDateString(iconDate);
+    calendarViewDate.value = getMonthStart(iconDate);
     window.addEventListener("click", closeCalendarPicker, { once: true });
   }
 }
@@ -200,18 +237,65 @@ function closeCalendarPicker() {
   isCalendarPickerOpen.value = false;
 }
 
-function changeCalendarDate(event) {
-  const date = event.target.value;
+function selectCalendarDate(date) {
+  calendarDraftDate.value = date;
+}
 
-  if (!date || !props.page?.icon) {
+function moveCalendarMonth(offset) {
+  const nextDate = new Date(calendarViewDate.value);
+  nextDate.setMonth(nextDate.getMonth() + offset);
+  calendarViewDate.value = getMonthStart(nextDate);
+}
+
+function selectTodayInCalendar() {
+  const today = new Date();
+  calendarDraftDate.value = toDateString(today);
+  calendarViewDate.value = getMonthStart(today);
+}
+
+function confirmCalendarDate() {
+  if (!calendarDraftDate.value || !props.page?.icon) {
     return;
   }
 
   emit("update-page-icon", {
     ...props.page.icon,
-    date,
+    date: calendarDraftDate.value,
   });
   closeCalendarPicker();
+}
+
+function parseLocalDate(value) {
+  if (!value) {
+    return new Date();
+  }
+
+  const [year, month, date] = value.split("-").map(Number);
+
+  if (!year || !month || !date) {
+    return new Date();
+  }
+
+  return new Date(year, month - 1, date);
+}
+
+function toDateString(date) {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function getMonthStart(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function formatDateLabel(value) {
+  const date = parseLocalDate(value);
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${date.getFullYear()}-${month}-${day}`;
 }
 
 async function insertBlockAfterTitle() {
@@ -673,16 +757,77 @@ onBeforeUnmount(() => {
           class="calendar-date-popover"
           @click.stop
         >
-          <label class="calendar-date-label" for="page-calendar-date">
-            选择日期
-          </label>
-          <input
-            id="page-calendar-date"
-            class="calendar-date-input"
-            type="date"
-            :value="page.icon.date"
-            @change="changeCalendarDate"
-          />
+          <div class="calendar-picker-head">
+            <div class="calendar-picker-date">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v5l3 2" />
+              </svg>
+              <span>{{ calendarSelectedDateLabel }}</span>
+            </div>
+            <button class="calendar-region-button" type="button">
+              <span>中国</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m7 10 5 5 5-5" />
+              </svg>
+            </button>
+          </div>
+          <div class="calendar-picker-toolbar">
+            <button class="calendar-month-button" type="button">
+              <span>{{ calendarMonthLabel }}</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m7 10 5 5 5-5" />
+              </svg>
+            </button>
+            <div class="calendar-picker-actions">
+              <button class="calendar-today-button" type="button" @click="selectTodayInCalendar">
+                今天
+              </button>
+              <button class="calendar-nav-button" type="button" title="上个月" @click="moveCalendarMonth(-1)">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
+              </button>
+              <button class="calendar-nav-button" type="button" title="下个月" @click="moveCalendarMonth(1)">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="calendar-weekdays" aria-hidden="true">
+            <span>一</span>
+            <span>二</span>
+            <span>三</span>
+            <span>四</span>
+            <span>五</span>
+            <span>六</span>
+            <span>日</span>
+          </div>
+          <div class="calendar-day-grid">
+            <button
+              v-for="day in calendarDays"
+              :key="day.key"
+              class="calendar-day-button"
+              :class="{
+                'is-muted': !day.isCurrentMonth,
+                'is-selected': day.isSelected,
+                'is-today': day.isToday,
+              }"
+              type="button"
+              @click="selectCalendarDate(day.date)"
+            >
+              {{ day.day }}
+            </button>
+          </div>
+          <div class="calendar-picker-footer">
+            <button class="calendar-cancel-button" type="button" @click="closeCalendarPicker">
+              取消
+            </button>
+            <button class="calendar-confirm-button" type="button" @click="confirmCalendarDate">
+              确定
+            </button>
+          </div>
         </div>
       </div>
       <input
