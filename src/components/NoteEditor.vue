@@ -19,6 +19,18 @@ import {
   updateBlockText,
 } from "../utils/blockOperations";
 
+const DEFAULT_CALENDAR_ICON_COLOR = "#cf75e6";
+const CALENDAR_ICON_COLORS = [
+  { value: "#d95863", label: "珊瑚红" },
+  { value: "#5caee5", label: "天空蓝" },
+  { value: "#e6b55f", label: "琥珀黄" },
+  { value: "#62bd94", label: "薄荷绿" },
+  { value: "#cf75e6", label: "紫色" },
+  { value: "#e15698", label: "玫粉" },
+  { value: "#9c6b87", label: "浆果紫" },
+  { value: "#626264", label: "石墨灰" },
+];
+
 const props = defineProps({
   page: {
     type: Object,
@@ -86,6 +98,10 @@ const pageStats = computed(() => {
     characterCount: Array.from(text.replace(/\s/g, "")).length,
   };
 });
+
+const activeCalendarColor = computed(
+  () => props.page?.icon?.color || DEFAULT_CALENDAR_ICON_COLOR,
+);
 
 const calendarSelectedDateLabel = computed(() => formatDateLabel(calendarDraftDate.value));
 
@@ -184,7 +200,23 @@ function setTodayCalendarIcon() {
   emit("update-page-icon", {
     type: "calendar",
     date: getTodayDateString(),
-    color: "#a36f92",
+    color: activeCalendarColor.value,
+  });
+}
+
+function setCalendarIconColor(color) {
+  if (!props.page?.icon) {
+    emit("update-page-icon", {
+      type: "calendar",
+      date: getTodayDateString(),
+      color,
+    });
+    return;
+  }
+
+  emit("update-page-icon", {
+    ...props.page.icon,
+    color,
   });
 }
 
@@ -694,6 +726,23 @@ onBeforeUnmount(() => {
               </span>
               <span>设为今日日历图标</span>
             </button>
+            <div class="page-icon-color-panel" role="group" aria-label="选择日历图标颜色">
+              <button
+                v-for="color in CALENDAR_ICON_COLORS"
+                :key="color.value"
+                class="icon-color-swatch"
+                :class="{ 'is-selected': activeCalendarColor === color.value }"
+                type="button"
+                :title="color.label"
+                :aria-label="`选择${color.label}`"
+                :style="{ '--icon-color': color.value }"
+                @click="setCalendarIconColor(color.value)"
+              >
+                <svg v-if="activeCalendarColor === color.value" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m6 12 4 4 8-8" />
+                </svg>
+              </button>
+            </div>
             <button
               v-if="page?.icon"
               class="page-options-item"
@@ -818,6 +867,23 @@ onBeforeUnmount(() => {
               @click="selectCalendarDate(day.date)"
             >
               {{ day.day }}
+            </button>
+          </div>
+          <div class="calendar-color-row" role="group" aria-label="选择日历图标颜色">
+            <button
+              v-for="color in CALENDAR_ICON_COLORS"
+              :key="color.value"
+              class="icon-color-swatch"
+              :class="{ 'is-selected': activeCalendarColor === color.value }"
+              type="button"
+              :title="color.label"
+              :aria-label="`选择${color.label}`"
+              :style="{ '--icon-color': color.value }"
+              @click="setCalendarIconColor(color.value)"
+            >
+              <svg v-if="activeCalendarColor === color.value" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m6 12 4 4 8-8" />
+              </svg>
             </button>
           </div>
           <div class="calendar-picker-footer">

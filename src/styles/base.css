@@ -735,6 +735,69 @@ textarea {
   fill: none;
 }
 
+.page-icon-color-panel,
+.calendar-color-row {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 10px;
+}
+
+.page-icon-color-panel {
+  padding: 8px 16px 10px;
+}
+
+.calendar-color-row {
+  padding: 4px 0 14px;
+  border-top: 1px solid #373737;
+}
+
+.icon-color-swatch {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.icon-color-swatch::before {
+  content: "";
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: var(--icon-color);
+}
+
+.icon-color-swatch:hover::before {
+  filter: brightness(1.08);
+}
+
+.icon-color-swatch.is-selected {
+  border: 2px solid #d8a1ef;
+  background: #2e2e2e;
+}
+
+.icon-color-swatch.is-selected::before {
+  width: 20px;
+  height: 20px;
+}
+
+.icon-color-swatch svg {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  color: #1e1e1e;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
 .page-options-section.is-muted {
   padding: 10px 16px 14px;
 }
