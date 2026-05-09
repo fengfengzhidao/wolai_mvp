@@ -386,9 +386,22 @@ textarea {
   border-radius: 5px;
   color: #d4d4d4;
   background: transparent;
-  font-size: 20px;
   line-height: 1;
   cursor: pointer;
+}
+
+.editor-action-button svg {
+  width: 19px;
+  height: 19px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.editor-action-button circle {
+  fill: none;
 }
 
 .editor-action-button:hover:not(:disabled) {
@@ -702,10 +715,21 @@ textarea {
 }
 
 .page-options-icon {
+  display: grid;
+  place-items: center;
+  width: 24px;
   color: #a7a7a7;
-  font-size: 17px;
   line-height: 1;
-  text-align: center;
+}
+
+.page-options-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
 }
 
 .page-options-section.is-muted {

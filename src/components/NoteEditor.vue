@@ -576,7 +576,11 @@ onBeforeUnmount(() => {
           aria-label="页面选项"
           @click.stop="togglePageMenu"
         >
-          ...
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="5" cy="12" r="1.5" />
+            <circle cx="12" cy="12" r="1.5" />
+            <circle cx="19" cy="12" r="1.5" />
+          </svg>
         </button>
         <div
           v-if="isPageMenuOpen"
@@ -590,11 +594,20 @@ onBeforeUnmount(() => {
           </div>
           <div class="page-options-section">
             <button class="page-options-item" type="button" role="menuitem" @click="requestCreateChildPage">
-              <span class="page-options-icon">＋</span>
+              <span class="page-options-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </span>
               <span>新建子页面</span>
             </button>
             <button class="page-options-item" type="button" role="menuitem" @click="setTodayCalendarIcon">
-              <span class="page-options-icon">▣</span>
+              <span class="page-options-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="5" y="5" width="14" height="14" rx="2" />
+                  <path d="M8 9h8M9 13h2M13 13h2" />
+                </svg>
+              </span>
               <span>设为今日日历图标</span>
             </button>
             <button
@@ -604,11 +617,19 @@ onBeforeUnmount(() => {
               role="menuitem"
               @click="removePageIcon"
             >
-              <span class="page-options-icon">−</span>
+              <span class="page-options-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 12h14" />
+                </svg>
+              </span>
               <span>移除页面图标</span>
             </button>
             <button class="page-options-item" type="button" role="menuitem" @click="requestExportMarkdown">
-              <span class="page-options-icon">⇩</span>
+              <span class="page-options-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 4v10M8 10l4 4 4-4M5 20h14" />
+                </svg>
+              </span>
               <span>导出 Markdown</span>
             </button>
             <button
@@ -617,7 +638,11 @@ onBeforeUnmount(() => {
               role="menuitem"
               @click="requestDeletePage"
             >
-              <span class="page-options-icon">×</span>
+              <span class="page-options-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6 6 18" />
+                </svg>
+              </span>
               <span>删除当前页面</span>
             </button>
           </div>
