@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from "vue";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 import AuthView from "./components/AuthView.vue";
 import Sidebar from "./components/Sidebar.vue";
 import NoteEditor from "./components/NoteEditor.vue";
@@ -24,11 +24,15 @@ const {
   renamePage,
   duplicatePage,
   movePage,
+  undoActivePage,
+  redoActivePage,
   updateActivePage,
   updateActivePageIcon,
 } = useNotes(undefined, { autoInitialize: false });
 
 onMounted(async () => {
+  document.addEventListener("keydown", handleUndoRedoShortcut);
+
   try {
     currentUser.value = await authRepository.getCurrentUser();
   } catch {
@@ -41,6 +45,39 @@ onMounted(async () => {
     await reloadNotes();
   }
 });
+
+onBeforeUnmount(() => {
+  document.removeEventListener("keydown", handleUndoRedoShortcut);
+});
+
+function handleUndoRedoShortcut(event) {
+  if (!currentUser.value || !(event.ctrlKey || event.metaKey)) {
+    return;
+  }
+
+  const target = event.target;
+  if (!(target instanceof Element) || !target.closest(".editor-pane")) {
+    return;
+  }
+
+  if (target.closest(".cm-editor")) {
+    return;
+  }
+
+  const key = event.key.toLowerCase();
+  const isUndo = key === "z" && !event.shiftKey;
+  const isRedo = key === "y" || (key === "z" && event.shiftKey);
+
+  if (!isUndo && !isRedo) {
+    return;
+  }
+
+  const didRestore = isUndo ? undoActivePage() : redoActivePage();
+  if (didRestore) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+}
 
 async function login(payload) {
   try {

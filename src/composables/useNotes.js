@@ -1,6 +1,8 @@
 import { computed, ref } from "vue";
 import { notesRepository as defaultNotesRepository } from "../repositories/notesRepository";
 
+const MAX_HISTORY_LENGTH = 50;
+
 function createBlock(text = "") {
   return {
     id: crypto.randomUUID(),
@@ -101,6 +103,8 @@ export function useNotes(notesRepository = defaultNotesRepository, options = {})
   const activePageId = ref(null);
   const saveStatus = ref("加载中");
   const saveTimer = ref(null);
+  const pageHistories = new Map();
+  let isRestoringHistory = false;
 
   if (options.autoInitialize !== false) {
     initializeNotes();
@@ -125,6 +129,7 @@ export function useNotes(notesRepository = defaultNotesRepository, options = {})
 
       pages.value = normalizePages(loadedPages);
       activePageId.value = loadedActivePageId || pages.value[0]?.id || null;
+      pageHistories.clear();
 
       if (pages.value.length === 0) {
         const starterPage = createPage("欢迎使用 wolai_mvp", "这是你的第一篇笔记。");
@@ -173,6 +178,109 @@ export function useNotes(notesRepository = defaultNotesRepository, options = {})
           saveStatus.value = "保存失败";
         });
     }, 350);
+  }
+
+  function getPageHistory(pageId) {
+    if (!pageHistories.has(pageId)) {
+      pageHistories.set(pageId, {
+        past: [],
+        future: [],
+      });
+    }
+
+    return pageHistories.get(pageId);
+  }
+
+  function createPageSnapshot(page) {
+    return {
+      title: page.title,
+      content: page.content,
+      blocks: clonePlainValue(page.blocks || []),
+      icon: clonePlainValue(page.icon),
+    };
+  }
+
+  function areSnapshotsEqual(left, right) {
+    return JSON.stringify(left) === JSON.stringify(right);
+  }
+
+  function recordActivePageHistory() {
+    if (isRestoringHistory || !activePage.value) {
+      return;
+    }
+
+    const history = getPageHistory(activePage.value.id);
+    const snapshot = createPageSnapshot(activePage.value);
+    const lastSnapshot = history.past.at(-1);
+
+    if (lastSnapshot && areSnapshotsEqual(lastSnapshot, snapshot)) {
+      return;
+    }
+
+    history.past.push(snapshot);
+    if (history.past.length > MAX_HISTORY_LENGTH) {
+      history.past.shift();
+    }
+    history.future = [];
+  }
+
+  function applyPageSnapshot(pageId, snapshot) {
+    isRestoringHistory = true;
+    try {
+      pages.value = pages.value.map((page) =>
+        page.id === pageId
+          ? {
+              ...page,
+              title: snapshot.title,
+              content: snapshot.content,
+              blocks: clonePlainValue(snapshot.blocks || []),
+              icon: normalizePageIcon(snapshot.icon),
+              updatedAt: Date.now(),
+            }
+          : page,
+      );
+      activePageId.value = pageId;
+    } finally {
+      isRestoringHistory = false;
+    }
+    queueSave();
+  }
+
+  function undoActivePage() {
+    const page = activePage.value;
+    if (!page) {
+      return false;
+    }
+
+    const history = getPageHistory(page.id);
+    const previousSnapshot = history.past.pop();
+    if (!previousSnapshot) {
+      return false;
+    }
+
+    history.future.push(createPageSnapshot(page));
+    applyPageSnapshot(page.id, previousSnapshot);
+    return true;
+  }
+
+  function redoActivePage() {
+    const page = activePage.value;
+    if (!page) {
+      return false;
+    }
+
+    const history = getPageHistory(page.id);
+    const nextSnapshot = history.future.pop();
+    if (!nextSnapshot) {
+      return false;
+    }
+
+    history.past.push(createPageSnapshot(page));
+    if (history.past.length > MAX_HISTORY_LENGTH) {
+      history.past.shift();
+    }
+    applyPageSnapshot(page.id, nextSnapshot);
+    return true;
   }
 
   function getFirstOrder(parentId) {
@@ -439,6 +547,8 @@ export function useNotes(notesRepository = defaultNotesRepository, options = {})
   }
 
   function updateActivePage(changes) {
+    recordActivePageHistory();
+
     pages.value = pages.value.map((page) => {
       if (page.id !== activePageId.value) {
         return page;
@@ -472,9 +582,15 @@ export function useNotes(notesRepository = defaultNotesRepository, options = {})
     renamePage,
     duplicatePage,
     movePage,
+    undoActivePage,
+    redoActivePage,
     updateActivePage,
     updateActivePageIcon,
   };
+}
+
+function clonePlainValue(value) {
+  return value == null ? value : JSON.parse(JSON.stringify(value));
 }
 
 function cloneBlocks(blocks) {
