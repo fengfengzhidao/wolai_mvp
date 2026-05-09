@@ -10,7 +10,7 @@
 - 从页面列表再次打开
 - 继续编辑
 
-当前版本采用 Vue 3 + Vite 实现，正文使用最小块级编辑器，默认通过 Go + Gin 后端保存到 MySQL。仍可通过 `VITE_NOTES_STORAGE=local` 切回浏览器 `localStorage`。
+当前版本采用 Vue 3 + Vite 实现，正文使用最小块级编辑器，默认通过 Go + Gin 后端保存到 MySQL。后端已包含简单登录注册，使用 HttpOnly cookie session 保持登录状态；仍可通过 `VITE_NOTES_STORAGE=local` 切回浏览器 `localStorage`。
 
 当前块编辑支持：
 
@@ -24,6 +24,13 @@
 - `[] ` 或 `[ ] ` 转待办块
 - 输入 `/` 打开块类型菜单
 - 菜单支持上下键选择、Enter 确认、Esc 关闭
+
+当前账号能力：
+
+- 用户注册
+- 用户登录
+- 退出登录
+- 按用户隔离页面数据
 
 ## 开发命令
 

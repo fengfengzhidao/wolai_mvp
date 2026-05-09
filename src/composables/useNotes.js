@@ -96,13 +96,15 @@ function normalizePages(pages) {
   );
 }
 
-export function useNotes(notesRepository = defaultNotesRepository) {
+export function useNotes(notesRepository = defaultNotesRepository, options = {}) {
   const pages = ref([]);
   const activePageId = ref(null);
   const saveStatus = ref("加载中");
   const saveTimer = ref(null);
 
-  initializeNotes();
+  if (options.autoInitialize !== false) {
+    initializeNotes();
+  }
 
   const sortedPages = computed(() =>
     [...pages.value].sort((a, b) => b.updatedAt - a.updatedAt),
@@ -114,6 +116,8 @@ export function useNotes(notesRepository = defaultNotesRepository) {
 
   async function initializeNotes() {
     try {
+      window.clearTimeout(saveTimer.value);
+      saveStatus.value = "加载中";
       const [loadedPages, loadedActivePageId] = await Promise.all([
         notesRepository.loadPages(),
         notesRepository.loadActivePageId(),
@@ -457,6 +461,7 @@ export function useNotes(notesRepository = defaultNotesRepository) {
     sortedPages,
     activePage,
     saveStatus,
+    reloadNotes: initializeNotes,
     createNewPage,
     createChildPage,
     createSiblingPageAfter,

@@ -67,6 +67,18 @@ textarea {
   font-weight: 700;
 }
 
+.sidebar-user {
+  margin: 6px 0 0;
+  color: #a9a9a9;
+  font-size: 13px;
+}
+
+.sidebar-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .new-page-button {
   height: 32px;
   padding: 0 12px;
@@ -456,6 +468,114 @@ textarea {
   font-size: 15px;
   text-align: left;
   cursor: pointer;
+}
+
+.logout-button {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  color: #cfcfcf;
+  background: transparent;
+  cursor: pointer;
+}
+
+.logout-button:hover {
+  color: #ffffff;
+  background: #303030;
+}
+
+.auth-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+  background:
+    linear-gradient(135deg, rgba(138, 79, 85, 0.18), transparent 34%),
+    #151515;
+}
+
+.auth-panel {
+  width: min(100%, 380px);
+  padding: 28px;
+  border: 1px solid #343434;
+  border-radius: 8px;
+  background: #202020;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.35);
+}
+
+.auth-kicker {
+  margin: 0;
+  color: #a8a8a8;
+  font-size: 13px;
+}
+
+.auth-panel h1 {
+  margin: 8px 0 24px;
+  color: #f2f2f2;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.auth-form {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-field {
+  display: grid;
+  gap: 8px;
+  color: #d7d7d7;
+  font-size: 14px;
+}
+
+.auth-field input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #3f3f3f;
+  border-radius: 6px;
+  color: #f2f2f2;
+  background: #181818;
+  outline: 0;
+}
+
+.auth-field input:focus {
+  border-color: #9d5c63;
+  box-shadow: 0 0 0 2px rgba(157, 92, 99, 0.18);
+}
+
+.auth-error {
+  margin: 0;
+  color: #ff9ca3;
+  font-size: 13px;
+}
+
+.auth-submit {
+  height: 42px;
+  border: 0;
+  border-radius: 6px;
+  color: #ffffff;
+  background: #8a4f55;
+  cursor: pointer;
+}
+
+.auth-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.auth-switch {
+  width: 100%;
+  height: 34px;
+  margin-top: 14px;
+  border: 0;
+  color: #d6a0a5;
+  background: transparent;
+  cursor: pointer;
+}
+
+.auth-switch:hover {
+  color: #ffffff;
 }
 
 .page-options-item:hover {

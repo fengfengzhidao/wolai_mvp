@@ -13,6 +13,10 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  user: {
+    type: Object,
+    default: null,
+  },
 });
 
 const emit = defineEmits([
@@ -25,6 +29,7 @@ const emit = defineEmits([
   "duplicate-page",
   "move-page",
   "move-page-to-parent",
+  "logout",
 ]);
 const contextMenu = ref({
   isOpen: false,
@@ -305,10 +310,16 @@ watch(
       <div>
         <p class="workspace-label">个人空间</p>
         <h1>wolai_mvp</h1>
+        <p v-if="user" class="sidebar-user">{{ user.username }}</p>
       </div>
-      <button class="new-page-button" type="button" @click="$emit('create-page')">
-        新建
-      </button>
+      <div class="sidebar-header-actions">
+        <button class="new-page-button" type="button" @click="$emit('create-page')">
+          新建
+        </button>
+        <button class="logout-button" type="button" title="退出登录" @click="$emit('logout')">
+          退出
+        </button>
+      </div>
     </header>
 
     <section class="page-list-panel" aria-label="页面列表">

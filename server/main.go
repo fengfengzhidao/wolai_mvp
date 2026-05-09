@@ -1,17 +1,22 @@
 package main
 
 import (
+	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -28,6 +33,7 @@ type Config struct {
 
 type Page struct {
 	ID        string  `gorm:"primaryKey;size:64"`
+	UserID    string  `gorm:"size:64;not null;index"`
 	Title     string  `gorm:"size:255;not null"`
 	Content   string  `gorm:"type:longtext;not null"`
 	Blocks    string  `gorm:"column:blocks_json;type:longtext;not null"`
@@ -36,6 +42,20 @@ type Page struct {
 	Order     int     `gorm:"column:sort_order;not null"`
 	CreatedAt int64   `gorm:"column:created_at_millis;not null"`
 	UpdatedAt int64   `gorm:"column:updated_at_millis;not null;index"`
+}
+
+type User struct {
+	ID           string `gorm:"primaryKey;size:64"`
+	Username     string `gorm:"size:64;not null;uniqueIndex"`
+	PasswordHash string `gorm:"size:255;not null"`
+	CreatedAt    int64  `gorm:"column:created_at_millis;not null"`
+}
+
+type Session struct {
+	ID        string `gorm:"primaryKey;size:64"`
+	UserID    string `gorm:"size:64;not null;index"`
+	TokenHash string `gorm:"size:64;not null;uniqueIndex"`
+	ExpiresAt int64  `gorm:"column:expires_at_millis;not null;index"`
 }
 
 type AppState struct {
@@ -85,7 +105,23 @@ type ActivePageResponse struct {
 	PageID *string `json:"pageId"`
 }
 
+type AuthRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type UserResponse struct {
+	ID       string `json:"id"`
+	Username string `json:"username"`
+}
+
+type AuthResponse struct {
+	User UserResponse `json:"user"`
+}
+
 const activePageStateKey = "active_page_id"
+const sessionCookieName = "wolai_session"
+const sessionDuration = 7 * 24 * time.Hour
 
 func main() {
 	config := loadConfig()
@@ -94,7 +130,7 @@ func main() {
 		log.Fatalf("connect database: %v", err)
 	}
 
-	if err := db.AutoMigrate(&Page{}, &AppState{}); err != nil {
+	if err := db.AutoMigrate(&User{}, &Session{}, &Page{}, &AppState{}); err != nil {
 		log.Fatalf("migrate database: %v", err)
 	}
 
@@ -104,10 +140,17 @@ func main() {
 	router.GET("/api/health", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
-	router.GET("/api/pages", listPages(db))
-	router.PUT("/api/pages/bulk", savePages(db))
-	router.GET("/api/active-page", getActivePage(db))
-	router.PUT("/api/active-page", saveActivePage(db))
+	router.POST("/api/auth/register", registerUser(db))
+	router.POST("/api/auth/login", loginUser(db))
+	router.POST("/api/auth/logout", logoutUser(db))
+
+	authenticated := router.Group("/api")
+	authenticated.Use(authMiddleware(db))
+	authenticated.GET("/auth/me", getCurrentUser())
+	authenticated.GET("/pages", listPages(db))
+	authenticated.PUT("/pages/bulk", savePages(db))
+	authenticated.GET("/active-page", getActivePage(db))
+	authenticated.PUT("/active-page", saveActivePage(db))
 
 	addr := ":" + config.AppPort
 	log.Printf("wolai backend listening on http://127.0.0.1%s", addr)
@@ -181,7 +224,12 @@ func ensureDatabase(config Config) error {
 
 func corsMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		ctx.Header("Access-Control-Allow-Origin", "*")
+		origin := ctx.GetHeader("Origin")
+		if origin != "" {
+			ctx.Header("Access-Control-Allow-Origin", origin)
+			ctx.Header("Vary", "Origin")
+		}
+		ctx.Header("Access-Control-Allow-Credentials", "true")
 		ctx.Header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS")
 		ctx.Header("Access-Control-Allow-Headers", "Origin,Content-Type,Accept")
 
@@ -194,10 +242,135 @@ func corsMiddleware() gin.HandlerFunc {
 	}
 }
 
+func registerUser(db *gorm.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var request AuthRequest
+		if err := ctx.ShouldBindJSON(&request); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "请求格式不正确"})
+			return
+		}
+
+		username := normalizeUsername(request.Username)
+		if username == "" || len(request.Password) < 6 {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "用户名不能为空，密码至少 6 位"})
+			return
+		}
+
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		user := User{
+			ID:           randomID(),
+			Username:     username,
+			PasswordHash: string(passwordHash),
+			CreatedAt:    time.Now().UnixMilli(),
+		}
+		if err := db.Create(&user).Error; err != nil {
+			ctx.JSON(http.StatusConflict, gin.H{"error": "用户名已存在"})
+			return
+		}
+
+		if err := createSession(ctx, db, user.ID); err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		ctx.JSON(http.StatusCreated, AuthResponse{User: userToResponse(user)})
+	}
+}
+
+func loginUser(db *gorm.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var request AuthRequest
+		if err := ctx.ShouldBindJSON(&request); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "请求格式不正确"})
+			return
+		}
+
+		var user User
+		if err := db.First(&user, "username = ?", normalizeUsername(request.Username)).Error; err != nil {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "用户名或密码错误"})
+			return
+		}
+
+		if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(request.Password)); err != nil {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "用户名或密码错误"})
+			return
+		}
+
+		if err := createSession(ctx, db, user.ID); err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, AuthResponse{User: userToResponse(user)})
+	}
+}
+
+func logoutUser(db *gorm.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		if token, err := ctx.Cookie(sessionCookieName); err == nil && token != "" {
+			_ = db.Delete(&Session{}, "token_hash = ?", hashToken(token)).Error
+		}
+
+		clearSessionCookie(ctx)
+		ctx.Status(http.StatusNoContent)
+	}
+}
+
+func authMiddleware(db *gorm.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		token, err := ctx.Cookie(sessionCookieName)
+		if err != nil || token == "" {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "请先登录"})
+			return
+		}
+
+		var session Session
+		now := time.Now().UnixMilli()
+		if err := db.First(&session, "token_hash = ? AND expires_at_millis > ?", hashToken(token), now).Error; err != nil {
+			clearSessionCookie(ctx)
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "登录已过期"})
+			return
+		}
+
+		var user User
+		if err := db.First(&user, "id = ?", session.UserID).Error; err != nil {
+			clearSessionCookie(ctx)
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "用户不存在"})
+			return
+		}
+
+		ctx.Set("currentUser", user)
+		ctx.Next()
+	}
+}
+
+func getCurrentUser() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		user, ok := currentUser(ctx)
+		if !ok {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "请先登录"})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, AuthResponse{User: userToResponse(user)})
+	}
+}
+
 func listPages(db *gorm.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		user, ok := currentUser(ctx)
+		if !ok {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "请先登录"})
+			return
+		}
+
 		var pages []Page
-		if err := db.Order("updated_at_millis DESC").Find(&pages).Error; err != nil {
+		if err := db.Where("user_id = ?", user.ID).Order("updated_at_millis DESC").Find(&pages).Error; err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -218,6 +391,12 @@ func listPages(db *gorm.DB) gin.HandlerFunc {
 
 func savePages(db *gorm.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		user, ok := currentUser(ctx)
+		if !ok {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "请先登录"})
+			return
+		}
+
 		var request BulkPagesRequest
 		if err := ctx.ShouldBindJSON(&request); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -226,7 +405,7 @@ func savePages(db *gorm.DB) gin.HandlerFunc {
 
 		models := make([]Page, 0, len(request.Pages))
 		for _, pageDTO := range request.Pages {
-			page, err := dtoToPage(pageDTO)
+			page, err := dtoToPage(pageDTO, user.ID)
 			if err != nil {
 				ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 				return
@@ -241,10 +420,10 @@ func savePages(db *gorm.DB) gin.HandlerFunc {
 			}
 
 			if len(incomingIDs) == 0 {
-				if err := tx.Where("1 = 1").Delete(&Page{}).Error; err != nil {
+				if err := tx.Where("user_id = ?", user.ID).Delete(&Page{}).Error; err != nil {
 					return err
 				}
-			} else if err := tx.Where("id NOT IN ?", incomingIDs).Delete(&Page{}).Error; err != nil {
+			} else if err := tx.Where("user_id = ? AND id NOT IN ?", user.ID, incomingIDs).Delete(&Page{}).Error; err != nil {
 				return err
 			}
 
@@ -267,8 +446,14 @@ func savePages(db *gorm.DB) gin.HandlerFunc {
 
 func getActivePage(db *gorm.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		user, ok := currentUser(ctx)
+		if !ok {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "请先登录"})
+			return
+		}
+
 		var state AppState
-		err := db.First(&state, "state_key = ?", activePageStateKey).Error
+		err := db.First(&state, "state_key = ?", userStateKey(user.ID, activePageStateKey)).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ctx.JSON(http.StatusOK, ActivePageResponse{PageID: nil})
 			return
@@ -285,6 +470,12 @@ func getActivePage(db *gorm.DB) gin.HandlerFunc {
 
 func saveActivePage(db *gorm.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		user, ok := currentUser(ctx)
+		if !ok {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "请先登录"})
+			return
+		}
+
 		var request ActivePageRequest
 		if err := ctx.ShouldBindJSON(&request); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -292,7 +483,7 @@ func saveActivePage(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		if request.PageID == nil || *request.PageID == "" {
-			if err := db.Delete(&AppState{}, "state_key = ?", activePageStateKey).Error; err != nil {
+			if err := db.Delete(&AppState{}, "state_key = ?", userStateKey(user.ID, activePageStateKey)).Error; err != nil {
 				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
 			}
@@ -301,7 +492,7 @@ func saveActivePage(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		state := AppState{
-			Key:   activePageStateKey,
+			Key:   userStateKey(user.ID, activePageStateKey),
 			Value: *request.PageID,
 		}
 		if err := db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&state).Error; err != nil {
@@ -313,7 +504,7 @@ func saveActivePage(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
-func dtoToPage(pageDTO PageDTO) (Page, error) {
+func dtoToPage(pageDTO PageDTO, userID string) (Page, error) {
 	if pageDTO.ID == "" {
 		return Page{}, errors.New("page id is required")
 	}
@@ -343,6 +534,7 @@ func dtoToPage(pageDTO PageDTO) (Page, error) {
 
 	return Page{
 		ID:        pageDTO.ID,
+		UserID:    userID,
 		Title:     pageDTO.Title,
 		Content:   pageDTO.Content,
 		Blocks:    string(blocksJSON),
@@ -382,4 +574,63 @@ func pageToDTO(page Page) (PageDTO, error) {
 		CreatedAt: page.CreatedAt,
 		UpdatedAt: page.UpdatedAt,
 	}, nil
+}
+
+func createSession(ctx *gin.Context, db *gorm.DB, userID string) error {
+	token := randomID() + randomID()
+	session := Session{
+		ID:        randomID(),
+		UserID:    userID,
+		TokenHash: hashToken(token),
+		ExpiresAt: time.Now().Add(sessionDuration).UnixMilli(),
+	}
+	if err := db.Create(&session).Error; err != nil {
+		return err
+	}
+
+	ctx.SetCookie(sessionCookieName, token, int(sessionDuration.Seconds()), "/", "", false, true)
+	return nil
+}
+
+func clearSessionCookie(ctx *gin.Context) {
+	ctx.SetCookie(sessionCookieName, "", -1, "/", "", false, true)
+}
+
+func currentUser(ctx *gin.Context) (User, bool) {
+	value, exists := ctx.Get("currentUser")
+	if !exists {
+		return User{}, false
+	}
+
+	user, ok := value.(User)
+	return user, ok
+}
+
+func userToResponse(user User) UserResponse {
+	return UserResponse{
+		ID:       user.ID,
+		Username: user.Username,
+	}
+}
+
+func userStateKey(userID string, key string) string {
+	return userID + ":" + key
+}
+
+func normalizeUsername(username string) string {
+	return strings.TrimSpace(username)
+}
+
+func randomID() string {
+	bytes := make([]byte, 16)
+	if _, err := rand.Read(bytes); err != nil {
+		panic(err)
+	}
+
+	return hex.EncodeToString(bytes)
+}
+
+func hashToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
 }
