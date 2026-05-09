@@ -20,7 +20,7 @@
 
 - 单用户个人笔记工作台
 - 左侧页面树，右侧块编辑区
-- 数据暂存在浏览器 `localStorage`
+- 数据默认通过 Go + Gin 后端持久化到 MySQL，`localStorage` 作为可切换的本地备用实现
 - 优先验证创建、编辑、保存、再次打开，而不是完整知识库能力
 
 ## 技术栈
@@ -28,12 +28,17 @@
 - Vue 3
 - Vite
 - 原生 CSS
-- `localStorage` 持久化
+- Go
+- Gin
+- GORM
+- MySQL
+- `localStorage` 本地备用持久化
 
 开发命令：
 
 ```bash
 npm install
+npm run dev:backend
 npm run dev
 ```
 
@@ -52,7 +57,8 @@ npm run build
 - `src/components/BlockEditor.vue`：块级输入、键盘交互、斜杠菜单、块右键菜单、图片块交互和多选
 - `src/components/CodeBlock.vue`：CodeMirror 6 代码块编辑、高亮、语言选择和复制
 - `src/composables/useNotes.js`：页面状态和页面操作编排，支持注入 notes repository
-- `src/repositories/notesRepository.js`：笔记数据本地持久化 repository，当前实现基于 `localStorage`
+- `src/repositories/notesRepository.js`：笔记数据 repository，默认通过 HTTP API 持久化，保留 `localStorage` 本地实现
+- `server/main.go`：Go + Gin API 服务，使用 GORM 连接 MySQL 并持久化页面数据
 - `src/utils/blockOperations.js`：块创建、转换、复制、删除、移动等通用操作
 - `src/utils/codeLanguages.js`：代码块语言列表和 CodeMirror 语言扩展映射
 - `src/utils/markdownExport.js`：当前页面 Markdown 导出转换和下载
@@ -208,15 +214,15 @@ npm run build
 
 - `blocks` 是当前正文编辑的主数据。
 - `content` 目前保留作兼容字段，由 blocks 文本拼接生成。
-- `parentId` / `order` 用于左侧页面树；页面仍以平铺数组保存在 `localStorage`，渲染时组装树。
+- `parentId` / `order` 用于左侧页面树；页面仍以平铺数组保存，后端持久化到 MySQL，渲染时组装树。
 - 页面树展开状态单独保存在 `localStorage` 的 `wolai_mvp_expanded_page_ids` 中。
-- 页面主数据和当前页面 id 已通过 `notesRepository` 抽象，后续可替换为 HTTP repository。
+- 页面主数据和当前页面 id 已通过 `notesRepository` 抽象，默认使用 HTTP repository 连接后端，仍保留 `localStorage` repository 作为备用。
 - 旧页面数据读取时会自动补齐 `blocks`、`parentId`、`order` 等字段。
-- 不要在当前阶段引入数据库、后端或账号系统。
+- 不要在当前阶段引入账号系统。
 
 ## 部署准备
 
-当前项目是纯前端 Vite 应用，数据保存在浏览器 `localStorage`。
+当前项目由前端 Vite 应用和 Go + Gin 后端组成，数据默认保存在 MySQL。
 
 部署前验证：
 
@@ -231,17 +237,14 @@ npm run build
 
 注意：
 
-- 当前没有后端服务、数据库或账号系统。
-- 静态托管即可运行，例如 Nginx、静态服务器、对象存储静态站点等。
-- 因为数据保存在用户浏览器本地，换浏览器、换设备或清理站点数据都会导致本地笔记不可见。
+- 当前已有 Go + Gin 后端和 MySQL 数据库；前端仍可静态托管，但需要配置 API 地址指向后端服务。
+- 如果通过 `VITE_NOTES_STORAGE=local` 切回本地模式，数据会保存在用户浏览器本地，换浏览器、换设备或清理站点数据都会导致本地笔记不可见。
 
 ## 明确先不做
 
 以下内容不属于当前 MVP 范围，除非用户明确要求并重新拆阶段：
 
 - 登录注册
-- 后端接口
-- 数据库
 - 云同步
 - 多用户
 - 团队空间
@@ -270,7 +273,7 @@ npm run build
 - 左侧页面树采用平铺数据结构加 `parentId` 的方式实现，避免过早把本地数据改成深层嵌套数组。
 - 图片在当前阶段不做上传；纯图片块基于 Markdown 图片语法 `![alt](url)` 渲染和交互。
 - 框选块采用左侧空白栏向右拖动的方式触发，减少和正文选择、代码编辑的冲突。
-- 后端接入前先抽象本地数据 repository，当前 `useNotes` 默认使用 `localNotesRepository`，后续可注入 HTTP 实现。
+- 后端接入前已抽象本地数据 repository，当前 `useNotes` 默认使用 HTTP repository，仍可通过 `VITE_NOTES_STORAGE=local` 切回 `localNotesRepository`。
 
 ## 开发约定
 

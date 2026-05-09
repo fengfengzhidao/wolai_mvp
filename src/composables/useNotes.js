@@ -1,5 +1,5 @@
 import { computed, ref } from "vue";
-import { localNotesRepository } from "../repositories/notesRepository";
+import { notesRepository as defaultNotesRepository } from "../repositories/notesRepository";
 
 function createBlock(text = "") {
   return {
@@ -90,25 +90,19 @@ function migratePageBlocks(page) {
   };
 }
 
-function loadPages(notesRepository) {
-  return notesRepository
-    .loadPages()
-    .map((page, index) => normalizePageTreeFields(migratePageBlocks(page), index));
+function normalizePages(pages) {
+  return (Array.isArray(pages) ? pages : []).map((page, index) =>
+    normalizePageTreeFields(migratePageBlocks(page), index),
+  );
 }
 
-export function useNotes(notesRepository = localNotesRepository) {
-  const initialPages = loadPages(notesRepository);
-  const pages = ref(initialPages);
-  const activePageId = ref(notesRepository.loadActivePageId() || pages.value[0]?.id || null);
-  const saveStatus = ref("已保存");
+export function useNotes(notesRepository = defaultNotesRepository) {
+  const pages = ref([]);
+  const activePageId = ref(null);
+  const saveStatus = ref("加载中");
   const saveTimer = ref(null);
 
-  if (pages.value.length === 0) {
-    const starterPage = createPage("欢迎使用 wolai_mvp", "这是你的第一篇笔记。");
-    pages.value = [starterPage];
-    activePageId.value = starterPage.id;
-    persistPages();
-  }
+  initializeNotes();
 
   const sortedPages = computed(() =>
     [...pages.value].sort((a, b) => b.updatedAt - a.updatedAt),
@@ -118,9 +112,47 @@ export function useNotes(notesRepository = localNotesRepository) {
     () => pages.value.find((page) => page.id === activePageId.value) || pages.value[0] || null,
   );
 
-  function persistPages() {
-    notesRepository.savePages(pages.value);
-    notesRepository.saveActivePageId(activePageId.value);
+  async function initializeNotes() {
+    try {
+      const [loadedPages, loadedActivePageId] = await Promise.all([
+        notesRepository.loadPages(),
+        notesRepository.loadActivePageId(),
+      ]);
+
+      pages.value = normalizePages(loadedPages);
+      activePageId.value = loadedActivePageId || pages.value[0]?.id || null;
+
+      if (pages.value.length === 0) {
+        const starterPage = createPage("欢迎使用 wolai_mvp", "这是你的第一篇笔记。");
+        pages.value = [starterPage];
+        activePageId.value = starterPage.id;
+        await persistPages();
+      }
+
+      saveStatus.value = "已保存";
+    } catch (error) {
+      console.error(error);
+      saveStatus.value = "后端连接失败";
+    }
+  }
+
+  async function persistPages() {
+    await Promise.all([
+      notesRepository.savePages(pages.value),
+      notesRepository.saveActivePageId(activePageId.value),
+    ]);
+  }
+
+  function persistImmediately() {
+    saveStatus.value = "保存中";
+    persistPages()
+      .then(() => {
+        saveStatus.value = "已保存";
+      })
+      .catch((error) => {
+        console.error(error);
+        saveStatus.value = "保存失败";
+      });
   }
 
   function queueSave() {
@@ -128,8 +160,14 @@ export function useNotes(notesRepository = localNotesRepository) {
     window.clearTimeout(saveTimer.value);
 
     saveTimer.value = window.setTimeout(() => {
-      persistPages();
-      saveStatus.value = "已保存";
+      persistPages()
+        .then(() => {
+          saveStatus.value = "已保存";
+        })
+        .catch((error) => {
+          console.error(error);
+          saveStatus.value = "保存失败";
+        });
     }, 350);
   }
 
@@ -177,7 +215,7 @@ export function useNotes(notesRepository = localNotesRepository) {
     newPage.order = getFirstOrder(parentId) - 1;
     pages.value = [newPage, ...pages.value];
     activePageId.value = newPage.id;
-    persistPages();
+    persistImmediately();
   }
 
   function createChildPage(parentId) {
@@ -209,7 +247,7 @@ export function useNotes(notesRepository = localNotesRepository) {
     pages.value = [newPage, ...pages.value];
     normalizeSiblingOrders(parentId, newPage.id, targetIndex + 1);
     activePageId.value = newPage.id;
-    persistPages();
+    persistImmediately();
   }
 
   function renamePage(pageId, title) {
@@ -223,8 +261,7 @@ export function useNotes(notesRepository = localNotesRepository) {
         : page,
     );
 
-    persistPages();
-    saveStatus.value = "已保存";
+    persistImmediately();
   }
 
   function duplicatePage(pageId) {
@@ -259,14 +296,12 @@ export function useNotes(notesRepository = localNotesRepository) {
     pages.value = [duplicatedPage, ...pages.value];
     normalizeSiblingOrders(parentId, duplicatedPage.id, sourceIndex + 1);
     activePageId.value = duplicatedPage.id;
-    persistPages();
-    saveStatus.value = "已保存";
+    persistImmediately();
   }
 
   function selectPage(pageId) {
     activePageId.value = pageId;
-    persistPages();
-    saveStatus.value = "已保存";
+    persistImmediately();
   }
 
   function deletePage(pageId) {
@@ -290,8 +325,7 @@ export function useNotes(notesRepository = localNotesRepository) {
       activePageId.value = nextPages[0]?.id || null;
     }
 
-    persistPages();
-    saveStatus.value = "已保存";
+    persistImmediately();
   }
 
   function isDescendantPage(pageId, possibleAncestorId) {
@@ -370,8 +404,7 @@ export function useNotes(notesRepository = localNotesRepository) {
       };
     });
 
-    persistPages();
-    saveStatus.value = "已保存";
+    persistImmediately();
   }
 
   function movePageToParent(pageId, parentId = null) {
@@ -397,8 +430,7 @@ export function useNotes(notesRepository = localNotesRepository) {
         : page,
     );
 
-    persistPages();
-    saveStatus.value = "已保存";
+    persistImmediately();
   }
 
   function updateActivePage(changes) {

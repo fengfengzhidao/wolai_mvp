@@ -10,7 +10,7 @@
 - 从页面列表再次打开
 - 继续编辑
 
-当前版本采用 Vue 3 + Vite 实现，正文使用最小块级编辑器，数据保存在浏览器 `localStorage` 中。
+当前版本采用 Vue 3 + Vite 实现，正文使用最小块级编辑器，默认通过 Go + Gin 后端保存到 MySQL。仍可通过 `VITE_NOTES_STORAGE=local` 切回浏览器 `localStorage`。
 
 当前块编辑支持：
 
@@ -29,8 +29,18 @@
 
 ```bash
 npm install
+npm run dev:backend
 npm run dev
 ```
+
+后端默认配置：
+
+- API 地址：`http://127.0.0.1:8080`
+- MySQL：`127.0.0.1:3306`
+- 用户名 / 密码：`root` / `root`
+- 数据库：`wolai_mvp`
+
+可通过环境变量覆盖：`DB_HOST`、`DB_PORT`、`DB_USER`、`DB_PASSWORD`、`DB_NAME`、`PORT`。
 
 ## 构建
 
