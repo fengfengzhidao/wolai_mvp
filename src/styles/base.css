@@ -1268,10 +1268,20 @@ textarea {
   position: relative;
 }
 
+.block-action-menu-submenu::after {
+  position: absolute;
+  top: -6px;
+  left: 100%;
+  display: none;
+  width: 12px;
+  height: 240px;
+  content: "";
+}
+
 .block-action-menu-submenu-content {
   position: absolute;
   top: -6px;
-  left: calc(100% + 8px);
+  left: calc(100% + 4px);
   display: none;
   min-width: 138px;
   max-height: 240px;
@@ -1286,6 +1296,18 @@ textarea {
 .block-action-menu.is-upward .block-action-menu-submenu-content {
   top: auto;
   bottom: -6px;
+}
+
+.block-action-menu.is-upward .block-action-menu-submenu::after {
+  top: auto;
+  bottom: -6px;
+}
+
+.block-action-menu-submenu:hover::after,
+.block-action-menu-submenu:focus-within::after,
+.block-action-menu-submenu:hover .block-action-menu-submenu-content,
+.block-action-menu-submenu:focus-within .block-action-menu-submenu-content {
+  display: block;
 }
 
 .block-action-menu-submenu:hover .block-action-menu-submenu-content,
