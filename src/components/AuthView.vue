@@ -9,7 +9,7 @@ const password = ref("");
 const errorMessage = ref("");
 const isSubmitting = ref(false);
 
-const title = computed(() => (mode.value === "login" ? "登录 wolai_mvp" : "注册账号"));
+const title = computed(() => (mode.value === "login" ? "登录 枫枫笔记" : "注册账号"));
 const submitText = computed(() => (mode.value === "login" ? "登录" : "注册并进入"));
 const switchText = computed(() =>
   mode.value === "login" ? "还没有账号？注册" : "已有账号？登录",

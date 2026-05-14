@@ -2,6 +2,13 @@ import { computed, ref } from "vue";
 import { notesRepository as defaultNotesRepository } from "../repositories/notesRepository";
 
 const MAX_HISTORY_LENGTH = 50;
+const APP_NAME = "枫枫笔记";
+
+function replaceLegacyProductName(text) {
+  return typeof text === "string"
+    ? text.replaceAll("wolai_mvp", APP_NAME).replaceAll("wolai mvp", APP_NAME)
+    : "";
+}
 
 function createBlock(text = "") {
   return {
@@ -18,7 +25,7 @@ function normalizeBlock(block) {
   return {
     id: block.id || crypto.randomUUID(),
     type,
-    text: typeof block.text === "string" ? block.text : "",
+    text: replaceLegacyProductName(block.text),
     checked: Boolean(block.checked),
     language:
       type === "code"
@@ -48,6 +55,8 @@ function createPage(title = "未命名页面", content = "") {
 function normalizePageTreeFields(page, index) {
   return {
     ...page,
+    title: replaceLegacyProductName(page.title) || "未命名页面",
+    content: replaceLegacyProductName(page.content),
     icon: normalizePageIcon(page.icon),
     parentId: typeof page.parentId === "string" ? page.parentId : null,
     order: Number.isFinite(page.order) ? page.order : index,
@@ -82,7 +91,7 @@ function migratePageBlocks(page) {
     };
   }
 
-  const content = typeof page.content === "string" ? page.content : "";
+  const content = replaceLegacyProductName(page.content);
   const lines = content.split(/\n{2,}/).filter((line) => line.trim().length > 0);
 
   return {
@@ -127,14 +136,20 @@ export function useNotes(notesRepository = defaultNotesRepository, options = {})
         notesRepository.loadActivePageId(),
       ]);
 
-      pages.value = normalizePages(loadedPages);
+      const normalizedPages = normalizePages(loadedPages);
+      const shouldPersistNormalizedPages =
+        JSON.stringify(normalizedPages) !== JSON.stringify(Array.isArray(loadedPages) ? loadedPages : []);
+
+      pages.value = normalizedPages;
       activePageId.value = loadedActivePageId || pages.value[0]?.id || null;
       pageHistories.clear();
 
       if (pages.value.length === 0) {
-        const starterPage = createPage("欢迎使用 wolai_mvp", "这是你的第一篇笔记。");
+        const starterPage = createPage(`欢迎使用 ${APP_NAME}`, "这是你的第一篇笔记。");
         pages.value = [starterPage];
         activePageId.value = starterPage.id;
+        await persistPages();
+      } else if (shouldPersistNormalizedPages) {
         await persistPages();
       }
 

@@ -362,7 +362,7 @@ watch(
     <header class="sidebar-header">
       <div>
         <p class="workspace-label">个人空间</p>
-        <h1>wolai_mvp</h1>
+        <h1>枫枫笔记</h1>
         <p v-if="user" class="sidebar-user">{{ user.username }}</p>
       </div>
     </header>
