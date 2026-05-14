@@ -1,3 +1,4 @@
+import { StreamLanguage } from "@codemirror/language";
 import { css } from "@codemirror/lang-css";
 import { go } from "@codemirror/lang-go";
 import { html } from "@codemirror/lang-html";
@@ -9,6 +10,7 @@ import { python } from "@codemirror/lang-python";
 import { sql } from "@codemirror/lang-sql";
 import { vue } from "@codemirror/lang-vue";
 import { yaml } from "@codemirror/lang-yaml";
+import { shell } from "@codemirror/legacy-modes/mode/shell";
 
 export const CODE_LANGUAGES = [
   { value: "plaintext", label: "Plain Text", aliases: ["text", "plain"] },
@@ -27,7 +29,12 @@ export const CODE_LANGUAGES = [
   { value: "html", label: "HTML", extension: () => html() },
   { value: "css", label: "CSS", extension: () => css() },
   { value: "json", label: "JSON", extension: () => json() },
-  { value: "bash", label: "Bash", aliases: ["shell", "sh", "zsh"] },
+  {
+    value: "shell",
+    label: "Shell",
+    aliases: ["sh", "bash", "zsh"],
+    extension: () => StreamLanguage.define(shell),
+  },
   { value: "yaml", label: "YAML", aliases: ["yml"], extension: () => yaml() },
   { value: "markdown", label: "Markdown", aliases: ["md"], extension: () => markdown() },
   { value: "python", label: "Python", aliases: ["py"], extension: () => python() },
