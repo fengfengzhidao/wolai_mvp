@@ -12,6 +12,10 @@ defineProps({
     type: String,
     default: "paragraph",
   },
+  placement: {
+    type: String,
+    default: "down",
+  },
 });
 
 const emit = defineEmits([
@@ -55,6 +59,7 @@ function deleteBlock() {
   <div
     v-if="isOpen"
     class="block-action-menu"
+    :class="{ 'is-upward': placement === 'up' }"
     role="menu"
     @mousedown.prevent
   >

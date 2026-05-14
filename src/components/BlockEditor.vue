@@ -42,6 +42,7 @@ const blockMenu = ref({
   blockId: null,
   x: 0,
   y: 0,
+  placement: "down",
 });
 const imageMenu = ref({
   isOpen: false,
@@ -128,6 +129,8 @@ const blockTypeOptions = [
 ];
 
 const listBlockTypes = ["bullet", "numbered"];
+const blockActionMenuHeight = 122;
+const viewportMenuGap = 12;
 
 const filteredBlockTypeOptions = computed(() => {
   const query = slashMenu.value.query.trim().toLowerCase();
@@ -675,11 +678,19 @@ function openBlockMenu(event, blockId) {
   event.stopPropagation();
   clearBlockSelection();
   closeImageMenu();
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+  const availableBelow = viewportHeight - event.clientY - viewportMenuGap;
+  const shouldOpenUpward =
+    availableBelow < blockActionMenuHeight && event.clientY > blockActionMenuHeight;
+
   blockMenu.value = {
     isOpen: true,
     blockId,
     x: event.clientX,
-    y: event.clientY,
+    y: shouldOpenUpward
+      ? Math.max(viewportMenuGap, event.clientY - blockActionMenuHeight)
+      : event.clientY,
+    placement: shouldOpenUpward ? "up" : "down",
   };
 }
 
@@ -1236,6 +1247,7 @@ watch(
         :is-open="blockMenu.isOpen && blockMenu.blockId === block.id"
         :block-types="blockTypeMenuItems"
         :current-type="block.type"
+        :placement="blockMenu.placement"
         :style="{ left: `${blockMenu.x}px`, top: `${blockMenu.y}px` }"
         @close="closeBlockMenu"
         @change-type="selectMenuBlockType"

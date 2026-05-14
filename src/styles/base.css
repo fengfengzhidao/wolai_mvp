@@ -1250,11 +1250,13 @@ textarea {
   display: grid;
   gap: 5px;
   min-width: 168px;
+  max-height: 240px;
   padding: 6px;
   border: 1px solid #3c3c3c;
   border-radius: 8px;
   background: #262626;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
+  overflow: visible;
 }
 
 .block-action-menu-group + .block-action-menu-group {
@@ -1272,11 +1274,18 @@ textarea {
   left: calc(100% + 8px);
   display: none;
   min-width: 138px;
+  max-height: 240px;
   padding: 6px;
   border: 1px solid #3c3c3c;
   border-radius: 8px;
   background: #262626;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
+  overflow-y: auto;
+}
+
+.block-action-menu.is-upward .block-action-menu-submenu-content {
+  top: auto;
+  bottom: -6px;
 }
 
 .block-action-menu-submenu:hover .block-action-menu-submenu-content,
