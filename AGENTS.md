@@ -28,6 +28,7 @@
 - Vue 3
 - Vite
 - 原生 CSS
+- CodeMirror 6
 - Go
 - Gin
 - GORM
@@ -56,9 +57,11 @@ npm run build
 - `src/components/NoteEditor.vue`：顶部面包屑/操作栏、页面标题、块编辑器和页面更新逻辑
 - `src/components/BlockEditor.vue`：块级输入、键盘交互、斜杠菜单、块右键菜单、图片块交互和多选
 - `src/components/CodeBlock.vue`：CodeMirror 6 代码块编辑、高亮、语言选择和复制
+- `src/components/SearchDialog.vue`：全局搜索弹窗、标题/正文搜索、结果排序、高亮摘要和键盘选择
+- `src/components/SharedPageView.vue`：公开只读分享页面渲染，不需要登录，只展示单个页面内容
 - `src/composables/useNotes.js`：页面状态和页面操作编排，支持注入 notes repository
-- `src/repositories/notesRepository.js`：笔记数据 repository，默认通过 HTTP API 持久化，保留 `localStorage` 本地实现
-- `server/main.go`：Go + Gin API 服务，使用 GORM 连接 MySQL 并持久化页面数据
+- `src/repositories/notesRepository.js`：笔记数据和分享数据 repository，默认通过 HTTP API 持久化，保留 `localStorage` 本地实现
+- `server/main.go`：Go + Gin API 服务，使用 GORM 连接 MySQL 并持久化页面数据、账号 session 和页面分享 token
 - `src/utils/blockOperations.js`：块创建、转换、复制、删除、移动等通用操作
 - `src/utils/codeLanguages.js`：代码块语言列表和 CodeMirror 语言扩展映射
 - `src/utils/markdownExport.js`：当前页面 Markdown 导出转换和下载
@@ -70,13 +73,18 @@ npm run build
 目前已经完成一个可用的个人块编辑笔记 MVP：
 
 - 用户可以注册、登录和退出登录。
+- 应用对外展示名称已统一为“枫枫笔记”，网页标题和 favicon 已替换。
 - 页面数据已按用户隔离保存。
 - 页面可以创建、编辑、自动保存、刷新恢复、删除。
 - 左侧页面菜单已经从平铺列表升级为树结构，支持右键菜单增强、展开状态持久化、拖拽排序/调整层级和级联删除。
-- 右侧主体顶部已增加类似 wolai 的面包屑和 `...` 页面选项菜单，支持面包屑跳转、新建子页面、删除当前页面、导出当前页面为 Markdown、页面统计和保存状态展示。
+- 左侧侧边栏支持从右侧顶部面包屑左侧按钮折叠/展开，状态持久化到 `localStorage`，并支持 `Ctrl + \` 快捷键切换。
+- 右侧主体顶部已增加类似 wolai 的面包屑和 `...` 页面选项菜单，支持面包屑跳转、新建子页面、删除当前页面、导出当前页面为 Markdown、分享当前页面、页面统计和保存状态展示。
+- 全局搜索已升级为弹窗式搜索，支持搜索标题和正文块、关键词高亮、结果摘要、路径展示、相关度/更新时间排序、仅标题/精确匹配筛选、键盘选择，并可打开页面后定位到命中块。
 - 页面支持类似 wolai 的日历图标，当前可在页面选项菜单中设为今日日历图标或移除图标，并可点击大日历图标选择具体日期。
+- 当前页面可生成公开只读分享链接，访问 `/share/:token` 不需要登录，只展示当前页面内容，不包含子页面，不允许编辑，可关闭分享使链接失效。
 - 正文已经从单文本迁移为块结构，支持多种块类型、斜杠菜单、右键块操作、拖拽移动、框选批量删除和框选复制原始文本。
-- 代码块已经接入 CodeMirror 6，支持实时高亮、Go 等多语言、语言选择、复制、长行横向滚动、上下键跨块移动和内容自适应高度。
+- 代码块已经接入 CodeMirror 6，支持实时高亮、Go、Shell 等多语言、语言选择、复制、长行横向滚动、上下键跨块移动和内容自适应高度。
+- 修改代码块语言后会记住最近一次手动选择的代码语言，后续手动创建代码块时默认沿用该语言；粘贴三反引号代码块仍按粘贴内容识别语言。
 - 普通块支持 Markdown 图片、超链接、行内代码和加粗的非编辑态显示；纯图片 Markdown 会作为图片块显示。
 
 ## 已完成功能
@@ -96,13 +104,26 @@ npm run build
 - 选中页面高亮
 - 页面标题编辑
 - 页面支持日历图标，左侧页面树显示小图标，没有图标的页面显示默认页面图标，编辑区标题上方显示可点击的大图标
+- 左侧页面树图标和标题间距已优化，避免日历图标与页面名称贴得过近
+- 侧边栏支持折叠/展开，折叠按钮位于右侧顶部面包屑左边，折叠状态保存在 `localStorage`
 - 右侧主体顶部面包屑显示当前页面路径
 - 面包屑支持点击父级页面跳转
-- 右侧主体顶部操作区通过 `...` 页面选项菜单支持新建子页面、删除当前页面、导出当前页面为 `.md` 和展示页面统计
+- 右侧主体顶部操作区通过 `...` 页面选项菜单支持新建子页面、删除当前页面、导出当前页面为 `.md`、分享当前页面和展示页面统计
+- 当前页面支持开启/关闭只读分享链接，分享链接只暴露单个页面，不带子页面
 - 自动保存
 - 刷新后恢复数据
 - 右键页面打开菜单
 - 删除页面，删除父页面时会级联删除子页面
+
+搜索能力：
+
+- 左侧搜索按钮会打开全局搜索弹窗，而不是过滤左侧页面树
+- 支持搜索页面标题和正文块内容
+- 支持仅匹配标题、精确匹配、按相关度排序、按最近更新排序
+- 搜索结果展示页面图标、标题、命中摘要、页面路径和更新时间
+- 标题与摘要中的关键词会高亮
+- 支持上下键选择结果、Enter 打开、Esc 关闭
+- 打开正文命中结果后，会跳转到对应页面并滚动/高亮命中的块
 
 块编辑基础：
 
@@ -149,7 +170,10 @@ npm run build
 - 三反引号代码块支持识别语言，例如 ```yaml
 - 代码块使用 CodeMirror 6，支持实时语法高亮
 - 代码块支持 Go 高亮，三反引号语言 `go` / `golang` 会识别为 Go
+- 代码块支持 Shell 高亮，三反引号语言 `shell` / `sh` / `bash` / `zsh` 会识别为 Shell
 - 代码块支持语言选择和复制代码
+- 代码块语言手动修改后会记录到 `localStorage`，后续通过 `/` 菜单、输入三反引号或手动插入创建代码块时默认使用该语言
+- 该语言偏好只影响手动创建代码块；粘贴解析出来的代码块仍使用粘贴内容携带的语言
 - 代码块样式参考 wolai，短代码块高度会跟随内容自适应
 - 非编辑态支持显示 Markdown 图片、超链接、行内代码和加粗
 - 纯 Markdown 图片块支持单击选中、双击预览、右键图片菜单
@@ -159,6 +183,9 @@ npm run build
 - 块左侧不显示常驻操作控件，保持编辑区布局干净
 - 右键块打开操作菜单
 - 右键菜单支持嵌套的“转换为”子菜单
+- 块操作菜单限制高度，靠近视口底部打开时会向上显示
+- “转换为”子菜单限制高度并支持内部滚动，主菜单到子菜单之间有悬停桥接区域，避免鼠标移过去前子菜单消失
+- 块右键菜单打开后，左键点击菜单外任意区域会关闭
 - 右键菜单支持复制、删除
 - 支持直接拖拽块调整顺序
 - 支持鼠标框选多个块
@@ -175,6 +202,7 @@ npm run build
 
 - 输入 `/` 打开块类型菜单
 - 点击其他区域会关闭 `/` 菜单
+- `/` 菜单限制最大高度并支持内部滚动，靠近视口底部打开时会向上显示
 - 菜单支持鼠标点击选择
 - 菜单支持上下键选择
 - 菜单支持按中文、拼音和英文关键词过滤，例如 `/h`、`/代码`、`/todo`
@@ -218,9 +246,33 @@ npm run build
 - `content` 目前保留作兼容字段，由 blocks 文本拼接生成。
 - `parentId` / `order` 用于左侧页面树；页面仍以平铺数组保存，后端持久化到 MySQL，渲染时组装树。
 - 页面树展开状态单独保存在 `localStorage` 的 `wolai_mvp_expanded_page_ids` 中。
+- 侧边栏折叠状态单独保存在 `localStorage` 的 `fengfeng_notes_sidebar_collapsed` 中。
+- 最近一次手动选择的代码块语言单独保存在 `localStorage` 的 `fengfeng_notes_preferred_code_language` 中。
 - 页面主数据和当前页面 id 已通过 `notesRepository` 抽象，默认使用 HTTP repository 连接后端，仍保留 `localStorage` repository 作为备用。
 - 旧页面数据读取时会自动补齐 `blocks`、`parentId`、`order` 等字段。
+- 旧默认品牌文案 `wolai_mvp` / `wolai mvp` 读取时会自动替换为“枫枫笔记”并写回保存。
 - 账号系统当前只做简单登录注册和 session，不扩展权限、团队或协作能力。
+
+分享数据：
+
+```go
+type PageShare struct {
+  ID        string
+  PageID    string
+  UserID    string
+  Token     string
+  CreatedAt int64
+  UpdatedAt int64
+}
+```
+
+说明：
+
+- `PageShare` 由后端 GORM 自动迁移到 MySQL，用于当前页面只读分享链接。
+- 一个页面最多对应一个分享 token；重复开启分享会返回已有 token。
+- 分享公开接口为 `GET /api/share/:token`，不需要登录，只返回 token 对应的单个页面。
+- 鉴权接口包括 `GET /api/pages/:pageID/share`、`POST /api/pages/:pageID/share`、`DELETE /api/pages/:pageID/share`。
+- 删除页面或批量保存导致页面不存在时，会清理对应的分享 token。
 
 ## 部署准备
 
@@ -276,6 +328,8 @@ npm run build
 - 框选块采用左侧空白栏向右拖动的方式触发，减少和正文选择、代码编辑的冲突。
 - 后端接入前已抽象本地数据 repository，当前 `useNotes` 默认使用 HTTP repository，仍可通过 `VITE_NOTES_STORAGE=local` 切回 `localNotesRepository`。
 - 当前登录注册是简单版本：用户名 + 密码，后端 bcrypt 哈希密码，HttpOnly cookie session 保持登录。
+- 只读分享链接是当前页面级公开访问能力，不等同于完整网页发布；暂不分享子页面、页面树、权限配置或发布站点。
+- 搜索先采用前端内存搜索实现，基于当前已加载的用户页面数据，不引入 MySQL 全文索引或后端搜索服务。
 
 ## 开发约定
 
