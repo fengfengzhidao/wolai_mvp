@@ -57,6 +57,7 @@ const slashMenu = ref({
   blockId: null,
   selectedIndex: 0,
   query: "",
+  placement: "down",
 });
 
 const blockTypeOptions = [
@@ -130,6 +131,7 @@ const blockTypeOptions = [
 
 const listBlockTypes = ["bullet", "numbered"];
 const blockActionMenuHeight = 122;
+const slashMenuHeight = 320;
 const viewportMenuGap = 12;
 
 const filteredBlockTypeOptions = computed(() => {
@@ -660,11 +662,24 @@ function handleEnter(block, target) {
 }
 
 function openSlashMenu(blockId, query = "") {
+  const blockInput = blockInputs.value.find(
+    (item) => item?.dataset?.blockId === blockId || item?.$el?.dataset?.blockId === blockId,
+  );
+  const blockRect = blockInput?.getBoundingClientRect?.();
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+  const availableBelow = blockRect
+    ? viewportHeight - blockRect.bottom - viewportMenuGap
+    : viewportHeight;
+  const availableAbove = blockRect ? blockRect.top - viewportMenuGap : 0;
+  const shouldOpenUpward =
+    availableBelow < slashMenuHeight && availableAbove > availableBelow;
+
   slashMenu.value = {
     isOpen: true,
     blockId,
     selectedIndex: 0,
     query,
+    placement: shouldOpenUpward ? "up" : "down",
   };
 }
 
@@ -1280,6 +1295,7 @@ watch(
       <div
         v-if="slashMenu.isOpen && slashMenu.blockId === block.id"
         class="slash-menu"
+        :class="{ 'is-upward': slashMenu.placement === 'up' }"
         @mousedown.prevent
       >
         <button

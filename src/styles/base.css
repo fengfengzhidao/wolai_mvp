@@ -1776,11 +1776,18 @@ textarea {
   display: flex;
   flex-direction: column;
   width: 240px;
+  max-height: 320px;
   padding: 6px;
   border: 1px solid #3c3c3c;
   border-radius: 8px;
   background: #262626;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
+  overflow-y: auto;
+}
+
+.slash-menu.is-upward {
+  top: auto;
+  bottom: calc(100% + 4px);
 }
 
 .slash-menu-item {
