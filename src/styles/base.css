@@ -237,8 +237,8 @@ textarea {
 .page-item-main {
   display: grid;
   grid-template-columns: 18px 18px minmax(0, 1fr);
+  column-gap: 6px;
   align-items: center;
-  gap: 2px;
   min-width: 0;
 }
 
