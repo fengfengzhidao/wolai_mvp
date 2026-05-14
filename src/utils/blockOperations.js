@@ -140,7 +140,7 @@ export function deleteBlocks(blocks, blockIds) {
   };
 }
 
-export function changeBlockType(blocks, blockId, type, text) {
+export function changeBlockType(blocks, blockId, type, text, overrides = {}) {
   return normalizeBlocksInput(blocks).map((block) =>
     block.id === blockId
       ? {
@@ -148,7 +148,10 @@ export function changeBlockType(blocks, blockId, type, text) {
           type,
           text: typeof text === "string" ? text : block.text,
           checked: type === "todo" ? Boolean(block.checked) : false,
-          language: type === "code" ? block.language || "plaintext" : undefined,
+          language:
+            type === "code"
+              ? overrides.language || block.language || "plaintext"
+              : undefined,
         }
       : block,
   );
@@ -187,10 +190,10 @@ export function updateBlockLanguage(blocks, blockId, language) {
   );
 }
 
-export function insertBlockAfter(blocks, blockId, type = "paragraph") {
+export function insertBlockAfter(blocks, blockId, type = "paragraph", overrides = {}) {
   const currentBlocks = normalizeBlocksInput(blocks);
   const blockIndex = currentBlocks.findIndex((block) => block.id === blockId);
-  const insertedBlock = createBlock(type);
+  const insertedBlock = createBlock(type, "", overrides);
 
   if (blockIndex === -1) {
     return {
@@ -209,10 +212,10 @@ export function insertBlockAfter(blocks, blockId, type = "paragraph") {
   };
 }
 
-export function insertBlockBefore(blocks, blockId, type = "paragraph") {
+export function insertBlockBefore(blocks, blockId, type = "paragraph", overrides = {}) {
   const currentBlocks = normalizeBlocksInput(blocks);
   const blockIndex = currentBlocks.findIndex((block) => block.id === blockId);
-  const insertedBlock = createBlock(type);
+  const insertedBlock = createBlock(type, "", overrides);
   const insertionIndex = blockIndex === -1 ? 0 : blockIndex;
 
   return {

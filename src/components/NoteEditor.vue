@@ -21,6 +21,7 @@ import {
 } from "../utils/blockOperations";
 
 const DEFAULT_CALENDAR_ICON_COLOR = "#cf75e6";
+const PREFERRED_CODE_LANGUAGE_KEY = "fengfeng_notes_preferred_code_language";
 const CALENDAR_ICON_COLORS = [
   { value: "#d95863", label: "珊瑚红" },
   { value: "#5caee5", label: "天空蓝" },
@@ -64,6 +65,7 @@ const isShareDialogOpen = ref(false);
 const shareUrl = ref("");
 const shareStatusMessage = ref("");
 const isShareLoading = ref(false);
+const preferredCodeLanguage = ref(loadPreferredCodeLanguage());
 
 const title = computed({
   get() {
@@ -156,7 +158,13 @@ function updateBlock(blockId, text) {
   const currentBlock = props.page?.blocks.find((block) => block.id === blockId);
   const shortcut = getBlockShortcut(text);
   const blocks = shortcut && currentBlock?.type !== "code"
-    ? changeBlocksType(props.page?.blocks || [], blockId, shortcut.type, shortcut.text)
+    ? changeBlocksType(
+        props.page?.blocks || [],
+        blockId,
+        shortcut.type,
+        shortcut.text,
+        getManualCodeBlockOverrides(shortcut.type),
+      )
     : updateBlockText(props.page?.blocks || [], blockId, text);
 
   emit("update-page", {
@@ -420,6 +428,9 @@ async function insertBlockAfterTitle() {
 }
 
 function changeBlockLanguage(blockId, language) {
+  preferredCodeLanguage.value = normalizeCodeLanguage(language);
+  localStorage.setItem(PREFERRED_CODE_LANGUAGE_KEY, preferredCodeLanguage.value);
+
   const blocks = updateBlockLanguage(props.page?.blocks || [], blockId, language);
 
   emit("update-page", {
@@ -438,7 +449,13 @@ function toggleBlock(blockId, checked) {
 }
 
 function changeBlockType(blockId, type, text) {
-  const blocks = changeBlocksType(props.page?.blocks || [], blockId, type, text);
+  const blocks = changeBlocksType(
+    props.page?.blocks || [],
+    blockId,
+    type,
+    text,
+    getManualCodeBlockOverrides(type),
+  );
 
   emit("update-page", {
     blocks,
@@ -478,6 +495,7 @@ async function insertBlockAfter(blockId, type = "paragraph") {
     props.page?.blocks || [],
     blockId,
     type,
+    getManualCodeBlockOverrides(type),
   );
 
   emit("update-page", {
@@ -494,6 +512,7 @@ async function insertBlockBefore(blockId, type = "paragraph") {
     props.page?.blocks || [],
     blockId,
     type,
+    getManualCodeBlockOverrides(type),
   );
 
   emit("update-page", {
@@ -503,6 +522,14 @@ async function insertBlockBefore(blockId, type = "paragraph") {
 
   await nextTick();
   blockEditor.value?.focusBlock(insertedBlockId);
+}
+
+function loadPreferredCodeLanguage() {
+  return normalizeCodeLanguage(localStorage.getItem(PREFERRED_CODE_LANGUAGE_KEY));
+}
+
+function getManualCodeBlockOverrides(type) {
+  return type === "code" ? { language: preferredCodeLanguage.value } : {};
 }
 
 function parsePastedText(text) {
