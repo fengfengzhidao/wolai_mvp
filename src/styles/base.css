@@ -34,9 +34,14 @@ textarea {
 }
 
 .app-shell {
+  position: relative;
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
   height: 100vh;
+}
+
+.app-shell.is-sidebar-collapsed {
+  grid-template-columns: 0 minmax(0, 1fr);
 }
 
 .sidebar {
@@ -49,6 +54,12 @@ textarea {
   border-right: 1px solid #313131;
 }
 
+.sidebar.is-collapsed {
+  width: 0;
+  border-right: 0;
+  visibility: hidden;
+}
+
 .sidebar-header {
   display: flex;
   align-items: center;
@@ -56,6 +67,45 @@ textarea {
   gap: 16px;
   padding: 20px 18px 16px;
   border-bottom: 1px solid #303030;
+}
+
+.sidebar-collapse-button,
+.sidebar-reopen-button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  color: #bcbcbc;
+  background: transparent;
+  cursor: pointer;
+}
+
+.sidebar-collapse-button:hover,
+.sidebar-reopen-button:hover {
+  color: #ffffff;
+  background: #303030;
+}
+
+.sidebar-collapse-button svg,
+.sidebar-reopen-button svg {
+  width: 21px;
+  height: 21px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  fill: none;
+}
+
+.sidebar-reopen-button {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 50;
+  background: rgba(37, 37, 37, 0.92);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
 }
 
 .workspace-label,
@@ -2342,12 +2392,23 @@ textarea {
     height: 100vh;
   }
 
+  .app-shell.is-sidebar-collapsed {
+    grid-template-columns: 1fr;
+    grid-template-rows: 0 minmax(0, 1fr);
+  }
+
   .sidebar {
     height: auto;
     min-height: 220px;
     max-height: 38vh;
     border-right: 0;
     border-bottom: 1px solid #313131;
+  }
+
+  .sidebar.is-collapsed {
+    min-height: 0;
+    max-height: 0;
+    border-bottom: 0;
   }
 
   .editor-pane {

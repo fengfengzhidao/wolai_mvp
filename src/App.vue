@@ -7,10 +7,13 @@ import SharedPageView from "./components/SharedPageView.vue";
 import { useNotes } from "./composables/useNotes";
 import { authRepository } from "./repositories/authRepository";
 
+const SIDEBAR_COLLAPSED_KEY = "fengfeng_notes_sidebar_collapsed";
+
 const currentUser = ref(null);
 const authStatus = ref("checking");
 const workspaceKey = ref(0);
 const shareToken = getShareTokenFromPath();
+const isSidebarCollapsed = ref(localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true");
 const searchTarget = ref({
   blockId: null,
   nonce: 0,
@@ -71,6 +74,12 @@ function handleUndoRedoShortcut(event) {
     return;
   }
 
+  if (event.key === "\\") {
+    event.preventDefault();
+    setSidebarCollapsed(!isSidebarCollapsed.value);
+    return;
+  }
+
   const target = event.target;
   if (!(target instanceof Element) || !target.closest(".editor-pane")) {
     return;
@@ -103,6 +112,11 @@ function openSearchResult(result) {
   if (result?.pageId) {
     selectPage(result.pageId);
   }
+}
+
+function setSidebarCollapsed(collapsed) {
+  isSidebarCollapsed.value = collapsed;
+  localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
 }
 
 async function login(payload) {
@@ -153,11 +167,17 @@ async function logout() {
       @login="login"
       @register="register"
     />
-    <main v-else :key="`workspace-${workspaceKey}`" class="app-shell">
+    <main
+      v-else
+      :key="`workspace-${workspaceKey}`"
+      class="app-shell"
+      :class="{ 'is-sidebar-collapsed': isSidebarCollapsed }"
+    >
       <Sidebar
         :pages="sortedPages"
         :active-page-id="activePage?.id || null"
         :user="currentUser"
+        :collapsed="isSidebarCollapsed"
         @create-page="createNewPage"
         @open-today-quick-note="openTodayQuickNote"
         @create-child-page="createChildPage"
@@ -169,7 +189,20 @@ async function logout() {
         @move-page="movePage"
         @logout="logout"
         @open-search-result="openSearchResult"
+        @collapse-sidebar="setSidebarCollapsed(true)"
       />
+      <button
+        v-if="isSidebarCollapsed"
+        class="sidebar-reopen-button"
+        type="button"
+        title="展开侧边栏"
+        aria-label="展开侧边栏"
+        @click="setSidebarCollapsed(false)"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 5h16M4 12h16M4 19h16" />
+        </svg>
+      </button>
       <NoteEditor
         :page="activePage"
         :pages="sortedPages"
