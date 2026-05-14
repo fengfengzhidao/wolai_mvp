@@ -1062,9 +1062,9 @@ function handleDocumentPointerDown(event) {
   }
 
   if (
+    event.button === 0 &&
     blockMenu.value.isOpen &&
-    !target.closest(".block-action-menu") &&
-    !target.closest(".block-shell")
+    !target.closest(".block-action-menu")
   ) {
     closeBlockMenu();
   }
