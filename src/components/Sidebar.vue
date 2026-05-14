@@ -1,6 +1,7 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import PageTreeNode from "./PageTreeNode.vue";
+import SearchDialog from "./SearchDialog.vue";
 
 const EXPANDED_PAGE_IDS_KEY = "wolai_mvp_expanded_page_ids";
 
@@ -29,12 +30,11 @@ const emit = defineEmits([
   "duplicate-page",
   "move-page",
   "open-today-quick-note",
+  "open-search-result",
   "logout",
 ]);
-const searchQuery = ref("");
 const isSearchOpen = ref(false);
 const isSettingsOpen = ref(false);
-const searchInput = ref(null);
 const contextMenu = ref({
   isOpen: false,
   pageId: null,
@@ -47,36 +47,7 @@ const dragState = ref({
 });
 const expandedPageIds = ref(getInitialExpandedPageIds(props.pages));
 
-const filteredPages = computed(() => {
-  const query = searchQuery.value.trim().toLowerCase();
-
-  if (!query) {
-    return props.pages;
-  }
-
-  const pageById = new Map(props.pages.map((page) => [page.id, page]));
-  const matchedPageIds = new Set();
-
-  props.pages.forEach((page) => {
-    const title = (page.title || "未命名页面").toLowerCase();
-    const content = (page.content || "").toLowerCase();
-
-    if (!title.includes(query) && !content.includes(query)) {
-      return;
-    }
-
-    matchedPageIds.add(page.id);
-    let currentPage = page.parentId ? pageById.get(page.parentId) : null;
-    while (currentPage) {
-      matchedPageIds.add(currentPage.id);
-      currentPage = currentPage.parentId ? pageById.get(currentPage.parentId) : null;
-    }
-  });
-
-  return props.pages.filter((page) => matchedPageIds.has(page.id));
-});
-const pageTree = computed(() => buildPageTree(filteredPages.value));
-const hasSearchQuery = computed(() => searchQuery.value.trim().length > 0);
+const pageTree = computed(() => buildPageTree(props.pages));
 const currentMenuPage = computed(() =>
   props.pages.find((page) => page.id === contextMenu.value.pageId) || null,
 );
@@ -172,19 +143,13 @@ function closeContextMenu() {
   contextMenu.value.isOpen = false;
 }
 
-async function toggleSearch(event) {
+function toggleSearch(event) {
   event.stopPropagation();
   isSearchOpen.value = !isSearchOpen.value;
 
   if (isSearchOpen.value) {
     closeSettings();
-    window.addEventListener("click", closeSearch, { once: true });
-    await nextTick();
-    searchInput.value?.focus();
-    return;
   }
-
-  searchQuery.value = "";
 }
 
 function closeSearch() {
@@ -206,10 +171,14 @@ function closeSettings() {
 }
 
 function requestTodayQuickNote() {
-  searchQuery.value = "";
   closeSearch();
   closeSettings();
   emit("open-today-quick-note");
+}
+
+function openSearchResult(result) {
+  closeSearch();
+  emit("open-search-result", result);
 }
 
 function requestDeletePage() {
@@ -341,7 +310,6 @@ function clearPageDrag() {
 
 onBeforeUnmount(() => {
   window.removeEventListener("click", closeContextMenu);
-  window.removeEventListener("click", closeSearch);
   window.removeEventListener("click", closeSettings);
 });
 
@@ -381,7 +349,7 @@ watch(
       </button>
       <button
         class="sidebar-icon-button"
-        :class="{ 'is-active': isSearchOpen || hasSearchQuery }"
+        :class="{ 'is-active': isSearchOpen }"
         type="button"
         title="搜索"
         aria-label="搜索"
@@ -426,23 +394,12 @@ watch(
           </button>
         </div>
       </div>
-      <div v-if="isSearchOpen" class="sidebar-search-popover" @click.stop>
-        <label class="sidebar-search">
-          <span class="sidebar-search-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="6.5" />
-              <path d="m16 16 4 4" />
-            </svg>
-          </span>
-          <input
-            ref="searchInput"
-            v-model="searchQuery"
-            type="search"
-            placeholder="搜索页面"
-            autocomplete="off"
-          />
-        </label>
-      </div>
+      <SearchDialog
+        v-if="isSearchOpen"
+        :pages="pages"
+        @close="closeSearch"
+        @open-result="openSearchResult"
+      />
     </section>
 
     <section class="page-list-panel" aria-label="页面列表">
@@ -466,9 +423,6 @@ watch(
         />
       </div>
       <p v-if="pages.length === 0" class="empty-list is-visible">还没有页面</p>
-      <p v-else-if="hasSearchQuery && filteredPages.length === 0" class="empty-list is-visible">
-        没有匹配的页面
-      </p>
     </section>
 
     <div

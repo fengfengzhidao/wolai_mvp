@@ -46,6 +46,10 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  searchTarget: {
+    type: Object,
+    default: null,
+  },
 });
 
 const emit = defineEmits([
@@ -151,6 +155,14 @@ watch(
       titleInput.value?.focus();
       titleInput.value?.select();
     }
+    focusSearchTargetBlock();
+  },
+);
+
+watch(
+  () => props.searchTarget?.nonce,
+  () => {
+    focusSearchTargetBlock();
   },
 );
 
@@ -175,6 +187,15 @@ function updateBlock(blockId, text) {
 
 function getPageTitle(page) {
   return page?.title?.trim() || "未命名页面";
+}
+
+async function focusSearchTargetBlock() {
+  if (!props.searchTarget?.blockId) {
+    return;
+  }
+
+  await nextTick();
+  blockEditor.value?.revealBlock(props.searchTarget.blockId);
 }
 
 function selectBreadcrumb(pageId) {

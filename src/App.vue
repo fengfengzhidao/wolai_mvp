@@ -11,6 +11,10 @@ const currentUser = ref(null);
 const authStatus = ref("checking");
 const workspaceKey = ref(0);
 const shareToken = getShareTokenFromPath();
+const searchTarget = ref({
+  blockId: null,
+  nonce: 0,
+});
 
 const {
   sortedPages,
@@ -91,6 +95,16 @@ function handleUndoRedoShortcut(event) {
   }
 }
 
+function openSearchResult(result) {
+  searchTarget.value = {
+    blockId: result?.blockId || null,
+    nonce: Date.now(),
+  };
+  if (result?.pageId) {
+    selectPage(result.pageId);
+  }
+}
+
 async function login(payload) {
   try {
     currentUser.value = await authRepository.login(payload.username, payload.password);
@@ -154,11 +168,13 @@ async function logout() {
         @duplicate-page="duplicatePage"
         @move-page="movePage"
         @logout="logout"
+        @open-search-result="openSearchResult"
       />
       <NoteEditor
         :page="activePage"
         :pages="sortedPages"
         :save-status="saveStatus"
+        :search-target="searchTarget"
         @update-page="updateActivePage"
         @select-page="selectPage"
         @create-child-page="createChildPage"

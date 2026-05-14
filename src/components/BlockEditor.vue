@@ -34,9 +34,11 @@ const pointerStart = ref(null);
 const pointerCurrent = ref(null);
 const pointerStartedInEditable = ref(false);
 const selectedBlockIds = ref([]);
+const highlightedBlockId = ref(null);
 const selectionStartPoint = ref(null);
 const dragBlockId = ref(null);
 const didDropBlock = ref(false);
+let highlightTimer = null;
 const blockMenu = ref({
   isOpen: false,
   blockId: null,
@@ -241,6 +243,21 @@ function clearBlockSelection() {
 async function focusBlock(blockId) {
   await nextTick();
   focusBlockAt(blockId, "start");
+}
+
+async function revealBlock(blockId) {
+  await nextTick();
+  const blockShell = document.querySelector(`.block-shell[data-block-id="${CSS.escape(blockId)}"]`);
+  blockShell?.scrollIntoView({
+    block: "center",
+    behavior: "smooth",
+  });
+  highlightedBlockId.value = blockId;
+  window.clearTimeout(highlightTimer);
+  highlightTimer = window.setTimeout(() => {
+    highlightedBlockId.value = null;
+  }, 1600);
+  await focusBlockAt(blockId, "start");
 }
 
 async function focusBlockAt(blockId, position = "start") {
@@ -1093,6 +1110,7 @@ async function selectBlockType(type) {
 
 defineExpose({
   focusBlock,
+  revealBlock,
 });
 
 onMounted(() => {
@@ -1105,6 +1123,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  window.clearTimeout(highlightTimer);
   document.removeEventListener("pointerdown", handleDocumentPointerDown);
   document.removeEventListener("pointermove", handleDocumentPointerMove);
   document.removeEventListener("pointerup", handleDocumentPointerUp);
@@ -1136,7 +1155,10 @@ watch(
       :key="block.id"
       :data-block-id="block.id"
       class="block-shell"
-      :class="{ 'is-selected': isBlockSelected(block.id) }"
+      :class="{
+        'is-selected': isBlockSelected(block.id),
+        'is-search-highlighted': highlightedBlockId === block.id,
+      }"
       draggable="true"
       @contextmenu="openBlockMenu($event, block.id)"
       @dragstart="handleBlockDragStart($event, block.id)"
