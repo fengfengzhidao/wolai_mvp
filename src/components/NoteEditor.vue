@@ -5,6 +5,7 @@ import CalendarPageIcon from "./CalendarPageIcon.vue";
 import { formatTime } from "../utils/formatTime";
 import { normalizeCodeLanguage } from "../utils/codeLanguages";
 import { exportPageAsMarkdown } from "../utils/markdownExport";
+import { shareRepository } from "../repositories/notesRepository";
 import {
   changeBlockType as changeBlocksType,
   createBlock,
@@ -59,6 +60,10 @@ const isPageMenuOpen = ref(false);
 const isCalendarPickerOpen = ref(false);
 const calendarDraftDate = ref(getTodayDateString());
 const calendarViewDate = ref(getMonthStart(new Date()));
+const isShareDialogOpen = ref(false);
+const shareUrl = ref("");
+const shareStatusMessage = ref("");
+const isShareLoading = ref(false);
 
 const title = computed({
   get() {
@@ -192,6 +197,74 @@ function requestDeletePage() {
 function requestExportMarkdown() {
   closePageMenu();
   exportPageAsMarkdown(props.page, props.pages);
+}
+
+async function requestSharePage() {
+  if (!props.page?.id || isShareLoading.value) {
+    return;
+  }
+
+  closePageMenu();
+  isShareDialogOpen.value = true;
+  shareStatusMessage.value = "正在生成分享链接...";
+  isShareLoading.value = true;
+
+  try {
+    const share = await shareRepository.enablePageShare(props.page.id);
+    shareUrl.value = createShareUrl(share?.token);
+    shareStatusMessage.value = shareUrl.value ? "分享链接已开启" : "生成分享链接失败";
+  } catch (error) {
+    console.error(error);
+    shareStatusMessage.value = "生成分享链接失败";
+  } finally {
+    isShareLoading.value = false;
+  }
+}
+
+function createShareUrl(token) {
+  if (!token) {
+    return "";
+  }
+
+  return `${window.location.origin}/share/${encodeURIComponent(token)}`;
+}
+
+async function copyShareUrl() {
+  if (!shareUrl.value) {
+    return;
+  }
+
+  try {
+    await navigator.clipboard?.writeText(shareUrl.value);
+    shareStatusMessage.value = "链接已复制";
+  } catch (error) {
+    console.error(error);
+    shareStatusMessage.value = "复制失败，请手动复制";
+  }
+}
+
+async function disableSharePage() {
+  if (!props.page?.id || isShareLoading.value) {
+    return;
+  }
+
+  isShareLoading.value = true;
+  shareStatusMessage.value = "正在关闭分享...";
+
+  try {
+    await shareRepository.disablePageShare(props.page.id);
+    shareUrl.value = "";
+    shareStatusMessage.value = "分享已关闭";
+  } catch (error) {
+    console.error(error);
+    shareStatusMessage.value = "关闭分享失败";
+  } finally {
+    isShareLoading.value = false;
+  }
+}
+
+function closeShareDialog() {
+  isShareDialogOpen.value = false;
 }
 
 function addPageIcon() {
@@ -738,6 +811,14 @@ onBeforeUnmount(() => {
               </span>
               <span>导出 Markdown</span>
             </button>
+            <button class="page-options-item" type="button" role="menuitem" @click="requestSharePage">
+              <span class="page-options-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8 12h8M13 7l5 5-5 5M5 5v14" />
+                </svg>
+              </span>
+              <span>分享页面</span>
+            </button>
             <button
               class="page-options-item is-danger"
               type="button"
@@ -904,6 +985,49 @@ onBeforeUnmount(() => {
         @duplicate-block="duplicateBlock"
         @delete-blocks="deleteBlocks"
       />
+    </div>
+    <div
+      v-if="isShareDialogOpen"
+      class="share-dialog-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label="分享页面"
+      @click="closeShareDialog"
+    >
+      <section class="share-dialog" @click.stop>
+        <header class="share-dialog-header">
+          <div>
+            <p>分享当前页面</p>
+            <h2>{{ getPageTitle(page) }}</h2>
+          </div>
+          <button class="share-dialog-close" type="button" aria-label="关闭" @click="closeShareDialog">
+            ×
+          </button>
+        </header>
+        <p class="share-dialog-note">获得链接的人可以只读查看当前页面，不包含子页面。</p>
+        <div class="share-link-row">
+          <input
+            class="share-link-input"
+            type="text"
+            :value="shareUrl"
+            readonly
+            placeholder="分享链接生成中"
+            @focus="$event.target.select()"
+          />
+          <button class="share-primary-button" type="button" :disabled="!shareUrl || isShareLoading" @click="copyShareUrl">
+            复制链接
+          </button>
+        </div>
+        <p class="share-status-text">{{ shareStatusMessage }}</p>
+        <div class="share-dialog-actions">
+          <button class="share-secondary-button" type="button" :disabled="isShareLoading" @click="disableSharePage">
+            关闭分享
+          </button>
+          <button class="share-secondary-button" type="button" @click="closeShareDialog">
+            完成
+          </button>
+        </div>
+      </section>
     </div>
   </section>
 </template>

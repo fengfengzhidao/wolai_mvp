@@ -1847,6 +1847,268 @@ textarea {
   font-size: 13px;
 }
 
+.share-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.58);
+}
+
+.share-dialog {
+  width: min(520px, 100%);
+  padding: 20px;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  background: #242424;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.52);
+}
+
+.share-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.share-dialog-header p {
+  margin: 0 0 6px;
+  color: #9f9f9f;
+  font-size: 13px;
+}
+
+.share-dialog-header h2 {
+  margin: 0;
+  color: #f2f2f2;
+  font-size: 22px;
+}
+
+.share-dialog-close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 6px;
+  color: #cfcfcf;
+  background: transparent;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.share-dialog-close:hover {
+  background: #343434;
+}
+
+.share-dialog-note,
+.share-status-text {
+  margin: 14px 0 0;
+  color: #a8a8a8;
+  font-size: 14px;
+}
+
+.share-link-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.share-link-input {
+  min-width: 0;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #454545;
+  border-radius: 6px;
+  color: #eeeeee;
+  background: #191919;
+}
+
+.share-primary-button,
+.share-secondary-button {
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid #454545;
+  border-radius: 6px;
+  color: #eeeeee;
+  background: #303030;
+  cursor: pointer;
+}
+
+.share-primary-button {
+  border-color: #9d5059;
+  background: #8a3f48;
+}
+
+.share-primary-button:disabled,
+.share-secondary-button:disabled {
+  color: #767676;
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.share-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.shared-page-shell {
+  min-height: 100vh;
+  color: #eeeeee;
+  background: #191919;
+}
+
+.shared-page,
+.shared-page-state {
+  width: min(100% - 48px, 760px);
+  margin: 0 auto;
+  padding: 64px 0 80px;
+}
+
+.shared-page-state {
+  display: grid;
+  min-height: 100vh;
+  place-content: center;
+  text-align: center;
+}
+
+.shared-page-state h1 {
+  margin: 0 0 10px;
+  font-size: 32px;
+}
+
+.shared-page-state p {
+  margin: 0;
+  color: #a9a9a9;
+}
+
+.shared-page-header {
+  margin-bottom: 34px;
+}
+
+.shared-page-brand {
+  margin: 0 0 28px;
+  color: #a0a0a0;
+  font-size: 14px;
+}
+
+.shared-page-icon {
+  margin-bottom: 14px;
+}
+
+.shared-page-header h1 {
+  margin: 0;
+  color: #f5f5f5;
+  font-size: 56px;
+  line-height: 1.12;
+}
+
+.shared-page-meta {
+  margin: 14px 0 0;
+  color: #999999;
+  font-size: 14px;
+}
+
+.shared-block-list {
+  display: grid;
+  gap: 10px;
+}
+
+.shared-block {
+  margin: 0;
+  color: #eeeeee;
+  font-size: 18px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.shared-block.is-heading1 {
+  margin-top: 18px;
+  font-size: 34px;
+  line-height: 1.3;
+}
+
+.shared-block.is-heading2 {
+  margin-top: 16px;
+  font-size: 28px;
+  line-height: 1.35;
+}
+
+.shared-block.is-heading3,
+.shared-block.is-heading4,
+.shared-block.is-heading5,
+.shared-block.is-heading6 {
+  margin-top: 12px;
+  font-size: 22px;
+  line-height: 1.4;
+}
+
+.shared-block.is-bullet,
+.shared-block.is-numbered,
+.shared-block.is-todo {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: start;
+}
+
+.shared-block-marker {
+  color: #bdbdbd;
+}
+
+.shared-block.is-code {
+  overflow-x: auto;
+  padding: 14px 16px;
+  border: 1px solid #343434;
+  border-radius: 8px;
+  background: #111111;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.shared-todo-box {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  margin-top: 7px;
+  place-items: center;
+  border: 1px solid #777777;
+  border-radius: 4px;
+}
+
+.shared-todo-box.is-checked {
+  border-color: #d05d6b;
+  background: #d05d6b;
+}
+
+.shared-todo-box svg {
+  width: 14px;
+  height: 14px;
+  stroke: #ffffff;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.shared-image-block {
+  margin: 8px 0;
+}
+
+.shared-image-block img {
+  display: block;
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+.shared-image-block figcaption {
+  margin-top: 8px;
+  color: #9d9d9d;
+  font-size: 14px;
+}
+
 @media (max-width: 760px) {
   .app-shell {
     grid-template-columns: 1fr;

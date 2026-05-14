@@ -88,6 +88,29 @@ export const apiNotesRepository = {
   },
 };
 
+export const shareRepository = {
+  async getPageShare(pageId) {
+    return requestJson(`/pages/${encodeURIComponent(pageId)}/share`);
+  },
+
+  async enablePageShare(pageId) {
+    return requestJson(`/pages/${encodeURIComponent(pageId)}/share`, {
+      method: "POST",
+    });
+  },
+
+  async disablePageShare(pageId) {
+    await requestJson(`/pages/${encodeURIComponent(pageId)}/share`, {
+      method: "DELETE",
+    });
+  },
+
+  async loadSharedPage(token) {
+    const data = await requestJson(`/share/${encodeURIComponent(token)}`);
+    return data?.page || null;
+  },
+};
+
 export const notesRepository =
   import.meta.env.VITE_NOTES_STORAGE === "local"
     ? localNotesRepository

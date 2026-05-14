@@ -3,12 +3,14 @@ import { onBeforeUnmount, onMounted, ref } from "vue";
 import AuthView from "./components/AuthView.vue";
 import Sidebar from "./components/Sidebar.vue";
 import NoteEditor from "./components/NoteEditor.vue";
+import SharedPageView from "./components/SharedPageView.vue";
 import { useNotes } from "./composables/useNotes";
 import { authRepository } from "./repositories/authRepository";
 
 const currentUser = ref(null);
 const authStatus = ref("checking");
 const workspaceKey = ref(0);
+const shareToken = getShareTokenFromPath();
 
 const {
   sortedPages,
@@ -31,6 +33,11 @@ const {
 } = useNotes(undefined, { autoInitialize: false });
 
 onMounted(async () => {
+  if (shareToken) {
+    authStatus.value = "ready";
+    return;
+  }
+
   document.addEventListener("keydown", handleUndoRedoShortcut);
 
   try {
@@ -49,6 +56,11 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   document.removeEventListener("keydown", handleUndoRedoShortcut);
 });
+
+function getShareTokenFromPath() {
+  const match = window.location.pathname.match(/^\/share\/([^/]+)\/?$/);
+  return match ? decodeURIComponent(match[1]) : "";
+}
 
 function handleUndoRedoShortcut(event) {
   if (!currentUser.value || !(event.ctrlKey || event.metaKey)) {
@@ -110,7 +122,12 @@ async function logout() {
 
 <template>
   <div class="app-root">
-    <main v-if="authStatus === 'checking'" key="checking" class="auth-shell">
+    <SharedPageView
+      v-if="shareToken"
+      key="share"
+      :token="shareToken"
+    />
+    <main v-else-if="authStatus === 'checking'" key="checking" class="auth-shell">
       <section class="auth-panel">
         <p class="auth-kicker">个人笔记工作台</p>
         <h1>正在进入...</h1>

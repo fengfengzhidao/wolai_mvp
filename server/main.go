@@ -44,6 +44,15 @@ type Page struct {
 	UpdatedAt int64   `gorm:"column:updated_at_millis;not null;index"`
 }
 
+type PageShare struct {
+	ID        string `gorm:"primaryKey;size:64"`
+	PageID    string `gorm:"size:64;not null;uniqueIndex"`
+	UserID    string `gorm:"size:64;not null;index"`
+	Token     string `gorm:"size:64;not null;uniqueIndex"`
+	CreatedAt int64  `gorm:"column:created_at_millis;not null"`
+	UpdatedAt int64  `gorm:"column:updated_at_millis;not null"`
+}
+
 type User struct {
 	ID           string `gorm:"primaryKey;size:64"`
 	Username     string `gorm:"size:64;not null;uniqueIndex"`
@@ -105,6 +114,15 @@ type ActivePageResponse struct {
 	PageID *string `json:"pageId"`
 }
 
+type ShareResponse struct {
+	Enabled bool    `json:"enabled"`
+	Token   *string `json:"token"`
+}
+
+type SharedPageResponse struct {
+	Page PageDTO `json:"page"`
+}
+
 type AuthRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -130,7 +148,7 @@ func main() {
 		log.Fatalf("connect database: %v", err)
 	}
 
-	if err := db.AutoMigrate(&User{}, &Session{}, &Page{}, &AppState{}); err != nil {
+	if err := db.AutoMigrate(&User{}, &Session{}, &Page{}, &PageShare{}, &AppState{}); err != nil {
 		log.Fatalf("migrate database: %v", err)
 	}
 
@@ -143,6 +161,7 @@ func main() {
 	router.POST("/api/auth/register", registerUser(db))
 	router.POST("/api/auth/login", loginUser(db))
 	router.POST("/api/auth/logout", logoutUser(db))
+	router.GET("/api/share/:token", getSharedPage(db))
 
 	authenticated := router.Group("/api")
 	authenticated.Use(authMiddleware(db))
@@ -151,6 +170,9 @@ func main() {
 	authenticated.PUT("/pages/bulk", savePages(db))
 	authenticated.GET("/active-page", getActivePage(db))
 	authenticated.PUT("/active-page", saveActivePage(db))
+	authenticated.GET("/pages/:pageID/share", getPageShare(db))
+	authenticated.POST("/pages/:pageID/share", enablePageShare(db))
+	authenticated.DELETE("/pages/:pageID/share", disablePageShare(db))
 
 	addr := ":" + config.AppPort
 	log.Printf("wolai backend listening on http://127.0.0.1%s", addr)
@@ -420,11 +442,19 @@ func savePages(db *gorm.DB) gin.HandlerFunc {
 			}
 
 			if len(incomingIDs) == 0 {
+				if err := tx.Where("user_id = ?", user.ID).Delete(&PageShare{}).Error; err != nil {
+					return err
+				}
 				if err := tx.Where("user_id = ?", user.ID).Delete(&Page{}).Error; err != nil {
 					return err
 				}
-			} else if err := tx.Where("user_id = ? AND id NOT IN ?", user.ID, incomingIDs).Delete(&Page{}).Error; err != nil {
-				return err
+			} else {
+				if err := tx.Where("user_id = ? AND page_id NOT IN ?", user.ID, incomingIDs).Delete(&PageShare{}).Error; err != nil {
+					return err
+				}
+				if err := tx.Where("user_id = ? AND id NOT IN ?", user.ID, incomingIDs).Delete(&Page{}).Error; err != nil {
+					return err
+				}
 			}
 
 			if len(models) > 0 {
@@ -502,6 +532,155 @@ func saveActivePage(db *gorm.DB) gin.HandlerFunc {
 
 		ctx.Status(http.StatusNoContent)
 	}
+}
+
+func getPageShare(db *gorm.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		user, ok := currentUser(ctx)
+		if !ok {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "请先登录"})
+			return
+		}
+
+		pageID := ctx.Param("pageID")
+		if pageID == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "page id is required"})
+			return
+		}
+
+		if !userOwnsPage(db, user.ID, pageID) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "页面不存在"})
+			return
+		}
+
+		var share PageShare
+		err := db.First(&share, "page_id = ? AND user_id = ?", pageID, user.ID).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusOK, ShareResponse{Enabled: false, Token: nil})
+			return
+		}
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, ShareResponse{Enabled: true, Token: &share.Token})
+	}
+}
+
+func enablePageShare(db *gorm.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		user, ok := currentUser(ctx)
+		if !ok {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "请先登录"})
+			return
+		}
+
+		pageID := ctx.Param("pageID")
+		if pageID == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "page id is required"})
+			return
+		}
+
+		if !userOwnsPage(db, user.ID, pageID) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "页面不存在"})
+			return
+		}
+
+		var share PageShare
+		err := db.First(&share, "page_id = ? AND user_id = ?", pageID, user.ID).Error
+		if err == nil {
+			ctx.JSON(http.StatusOK, ShareResponse{Enabled: true, Token: &share.Token})
+			return
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		now := time.Now().UnixMilli()
+		share = PageShare{
+			ID:        randomID(),
+			PageID:    pageID,
+			UserID:    user.ID,
+			Token:     randomID() + randomID(),
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+		if err := db.Create(&share).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		ctx.JSON(http.StatusCreated, ShareResponse{Enabled: true, Token: &share.Token})
+	}
+}
+
+func disablePageShare(db *gorm.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		user, ok := currentUser(ctx)
+		if !ok {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "请先登录"})
+			return
+		}
+
+		pageID := ctx.Param("pageID")
+		if pageID == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "page id is required"})
+			return
+		}
+
+		if !userOwnsPage(db, user.ID, pageID) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "页面不存在"})
+			return
+		}
+
+		if err := db.Delete(&PageShare{}, "page_id = ? AND user_id = ?", pageID, user.ID).Error; err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		ctx.Status(http.StatusNoContent)
+	}
+}
+
+func getSharedPage(db *gorm.DB) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		token := strings.TrimSpace(ctx.Param("token"))
+		if token == "" {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "分享不存在"})
+			return
+		}
+
+		var share PageShare
+		if err := db.First(&share, "token = ?", token).Error; err != nil {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "分享不存在或已关闭"})
+			return
+		}
+
+		var page Page
+		if err := db.First(&page, "id = ? AND user_id = ?", share.PageID, share.UserID).Error; err != nil {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "页面不存在"})
+			return
+		}
+
+		pageDTO, err := pageToDTO(page)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, SharedPageResponse{Page: pageDTO})
+	}
+}
+
+func userOwnsPage(db *gorm.DB, userID string, pageID string) bool {
+	var count int64
+	if err := db.Model(&Page{}).Where("id = ? AND user_id = ?", pageID, userID).Count(&count).Error; err != nil {
+		return false
+	}
+
+	return count > 0
 }
 
 func dtoToPage(pageDTO PageDTO, userID string) (Page, error) {
