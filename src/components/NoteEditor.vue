@@ -50,6 +50,10 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  isSidebarCollapsed: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits([
@@ -58,6 +62,7 @@ const emit = defineEmits([
   "create-child-page",
   "delete-page",
   "update-page-icon",
+  "toggle-sidebar",
 ]);
 const titleInput = ref(null);
 const blockEditor = ref(null);
@@ -780,28 +785,41 @@ onBeforeUnmount(() => {
 <template>
   <section class="editor-pane" aria-label="页面编辑区">
     <header class="editor-topbar">
-      <nav class="editor-breadcrumbs" aria-label="页面路径">
-        <template
-          v-for="(crumb, index) in breadcrumbs"
-          :key="crumb.id || 'workspace'"
+      <div class="editor-navigation">
+        <button
+          class="editor-sidebar-toggle"
+          type="button"
+          :title="isSidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
+          :aria-label="isSidebarCollapsed ? '展开侧边栏' : '收起侧边栏'"
+          @click="$emit('toggle-sidebar')"
         >
-          <button
-            class="editor-breadcrumb"
-            type="button"
-            :disabled="!crumb.id || crumb.id === page?.id"
-            @click="selectBreadcrumb(crumb.id)"
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 5h16M4 12h16M4 19h16" />
+          </svg>
+        </button>
+        <nav class="editor-breadcrumbs" aria-label="页面路径">
+          <template
+            v-for="(crumb, index) in breadcrumbs"
+            :key="crumb.id || 'workspace'"
           >
-            {{ crumb.title }}
-          </button>
-          <span
-            v-if="index < breadcrumbs.length - 1"
-            class="editor-breadcrumb-separator"
-            aria-hidden="true"
-          >
-            ›
-          </span>
-        </template>
-      </nav>
+            <button
+              class="editor-breadcrumb"
+              type="button"
+              :disabled="!crumb.id || crumb.id === page?.id"
+              @click="selectBreadcrumb(crumb.id)"
+            >
+              {{ crumb.title }}
+            </button>
+            <span
+              v-if="index < breadcrumbs.length - 1"
+              class="editor-breadcrumb-separator"
+              aria-hidden="true"
+            >
+              ›
+            </span>
+          </template>
+        </nav>
+      </div>
       <div class="editor-actions" aria-label="页面操作">
         <span class="editor-topbar-status">{{ saveStatus }}</span>
         <button

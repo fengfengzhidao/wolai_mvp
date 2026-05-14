@@ -35,7 +35,6 @@ const emit = defineEmits([
   "move-page",
   "open-today-quick-note",
   "open-search-result",
-  "collapse-sidebar",
   "logout",
 ]);
 const isSearchOpen = ref(false);
@@ -338,17 +337,6 @@ watch(
         <h1>枫枫笔记</h1>
         <p v-if="user" class="sidebar-user">{{ user.username }}</p>
       </div>
-      <button
-        class="sidebar-collapse-button"
-        type="button"
-        title="收起侧边栏"
-        aria-label="收起侧边栏"
-        @click="$emit('collapse-sidebar')"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 5h16M4 12h16M4 19h16" />
-        </svg>
-      </button>
     </header>
 
     <section class="sidebar-actions" aria-label="操作区域">

@@ -189,30 +189,19 @@ async function logout() {
         @move-page="movePage"
         @logout="logout"
         @open-search-result="openSearchResult"
-        @collapse-sidebar="setSidebarCollapsed(true)"
       />
-      <button
-        v-if="isSidebarCollapsed"
-        class="sidebar-reopen-button"
-        type="button"
-        title="展开侧边栏"
-        aria-label="展开侧边栏"
-        @click="setSidebarCollapsed(false)"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 5h16M4 12h16M4 19h16" />
-        </svg>
-      </button>
       <NoteEditor
         :page="activePage"
         :pages="sortedPages"
         :save-status="saveStatus"
         :search-target="searchTarget"
+        :is-sidebar-collapsed="isSidebarCollapsed"
         @update-page="updateActivePage"
         @select-page="selectPage"
         @create-child-page="createChildPage"
         @delete-page="deletePage"
         @update-page-icon="updateActivePageIcon"
+        @toggle-sidebar="setSidebarCollapsed(!isSidebarCollapsed)"
       />
     </main>
   </div>

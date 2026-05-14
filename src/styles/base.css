@@ -69,45 +69,6 @@ textarea {
   border-bottom: 1px solid #303030;
 }
 
-.sidebar-collapse-button,
-.sidebar-reopen-button {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 0;
-  border-radius: 7px;
-  color: #bcbcbc;
-  background: transparent;
-  cursor: pointer;
-}
-
-.sidebar-collapse-button:hover,
-.sidebar-reopen-button:hover {
-  color: #ffffff;
-  background: #303030;
-}
-
-.sidebar-collapse-button svg,
-.sidebar-reopen-button svg {
-  width: 21px;
-  height: 21px;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  fill: none;
-}
-
-.sidebar-reopen-button {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 50;
-  background: rgba(37, 37, 37, 0.92);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
-}
-
 .workspace-label,
 .section-title {
   margin: 0;
@@ -374,6 +335,41 @@ textarea {
   border-bottom: 1px solid #2b2b2b;
   background: rgba(24, 24, 24, 0.94);
   backdrop-filter: blur(14px);
+}
+
+.editor-navigation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.editor-sidebar-toggle {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: #bdbdbd;
+  background: transparent;
+  cursor: pointer;
+}
+
+.editor-sidebar-toggle:hover {
+  color: #ffffff;
+  background: #2a2a2a;
+}
+
+.editor-sidebar-toggle svg {
+  width: 21px;
+  height: 21px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  fill: none;
 }
 
 .editor-breadcrumbs {
